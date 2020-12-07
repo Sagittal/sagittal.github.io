@@ -112,9 +112,9 @@ stave.addClef("treble").addTimeSignature("4/4");
 stave.setContext(context).draw();
 var notes = [
     // A quarter-note C.
-    new VF.StaveNote({ clef: "treble", keys: ["c/4"], duration: "q" })
-        .addAccidental(0, new VF.Accidental("accSagittal5CommaUp"))
-        .addAccidental(0, new VF.Accidental("accSagittalGrave")),
+    new VF.StaveNote({ clef: "treble", keys: ["c/4"], duration: "q" }),
+    // .addAccidental(0, new VF.Accidental("accSagittal5CommaUp"))
+    // .addAccidental(0, new VF.Accidental("accSagittalGrave")),
     // A quarter-note D.
     new VF.StaveNote({ clef: "treble", keys: ["d/4"], duration: "q" }),
     // A quarter-note rest. Note that the key (b/4) specifies the vertical position of the rest.
