@@ -94,6 +94,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __webpack_require__(1);
 const replace_1 = __webpack_require__(7);
 replace_1.replaceStaffCodeWithUnicodeApp();
+__webpack_require__(261);
 
 
 /***/ }),
@@ -564,12 +565,15 @@ exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.staffCodeInput = void 0;
+exports.staffCodeInput = exports.controlsDiv = void 0;
 const general_1 = __webpack_require__(9);
 const replace_1 = __webpack_require__(7);
+const controlsDiv = document.createElement("div");
+exports.controlsDiv = controlsDiv;
+document.body.appendChild(controlsDiv);
 const staffCodeInput = document.createElement("textarea");
 exports.staffCodeInput = staffCodeInput;
-document.body.appendChild(staffCodeInput);
+controlsDiv.appendChild(staffCodeInput);
 staffCodeInput.value = "st24 tbcf sp16 st24";
 staffCodeInput.addEventListener("keydown", () => { general_1.doOnNextEventLoop(replace_1.replaceStaffCodeWithUnicodeApp, 100); });
 staffCodeInput.addEventListener("paste", () => { general_1.doOnNextEventLoop(replace_1.replaceStaffCodeWithUnicodeApp, 100); });
@@ -19868,6 +19872,45 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ])
 });
 ;
+
+/***/ }),
+/* 261 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const staffCodeInput_1 = __webpack_require__(8);
+const saveSvg = () => {
+    const svg = document.querySelector("svg");
+    if (!svg)
+        return;
+    const clonedSvg = svg.cloneNode(true);
+    clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    const text = clonedSvg.querySelector("text");
+    if (!text)
+        return;
+    text.style.fontFamily = "Bravura Text BB";
+    text.style.fontSize = "72px";
+    const outerHTML = clonedSvg.outerHTML;
+    const blob = new Blob([outerHTML], { type: "image/svg+xml;charset=utf-8" });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(blob);
+    const name = "staffCode.svg";
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = blobURL;
+    a.download = name;
+    a.click();
+    window.URL.revokeObjectURL(blobURL);
+};
+const buttonDiv = document.createElement("div");
+const button = document.createElement("button");
+button.textContent = "Download";
+button.addEventListener("click", saveSvg);
+buttonDiv.appendChild(button);
+staffCodeInput_1.controlsDiv.appendChild(buttonDiv);
+
 
 /***/ })
 /******/ ]);
