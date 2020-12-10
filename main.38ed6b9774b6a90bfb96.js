@@ -418,7 +418,7 @@ __webpack_require__.r(__webpack_exports__);
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 var ___CSS_LOADER_URL_REPLACEMENT_0___ = _node_modules_css_loader_dist_runtime_getUrl_js__WEBPACK_IMPORTED_MODULE_1___default()(_assets_fonts_BravuraTextBB_otf__WEBPACK_IMPORTED_MODULE_2__["default"]);
 // Module
-___CSS_LOADER_EXPORT___.push([module.i, "@font-face {\n  font-family: 'Bravura Text BB';\n  src: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ") format(\"opentype\"); }\n\n.svg-text {\n  font-size: 72px;\n  font-family: 'Bravura Text BB'; }\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.i, "@font-face {\n  font-family: 'Bravura Text BB';\n  src: url(" + ___CSS_LOADER_URL_REPLACEMENT_0___ + ") format(\"opentype\"); }\n\n.svg-text {\n  font-size: 40px;\n  margin: 0.7em 0;\n  font-family: 'Bravura Text BB'; }\n", ""]);
 // Exports
 /* harmony default export */ __webpack_exports__["default"] = (___CSS_LOADER_EXPORT___);
 
@@ -17079,8 +17079,8 @@ exports.staffDiv = void 0;
 const staffDiv = document.createElement("div");
 exports.staffDiv = staffDiv;
 staffDiv.style.fontFamily = "Bravura Text BB";
-staffDiv.style.fontSize = "72px"; // TODO: extract to styles.scss
-staffDiv.style.margin = "50px 0px";
+staffDiv.style.fontSize = "40px"; // TODO: extract to styles.scss
+staffDiv.style.margin = "0.7em 0";
 document.body.appendChild(staffDiv);
 
 
