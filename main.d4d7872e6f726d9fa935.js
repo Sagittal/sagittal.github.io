@@ -15112,7 +15112,7 @@ const staffDiv_1 = __webpack_require__(262);
 const vectorize_1 = __webpack_require__(263);
 const replaceStaffCodeWithUnicodeApp = () => {
     const unicode = staffCodeToUnicode_1.staffCodeToUnicode(staffCodeInput_1.staffCodeInput.value);
-    staffDiv_1.staffDiv.value = unicode;
+    staffDiv_1.staffDiv.textContent = unicode;
     vectorize_1.vectorize(unicode);
 };
 exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
@@ -17345,7 +17345,7 @@ exports.computeSpaceUnicode = computeSpaceUnicode;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.staffDiv = void 0;
-const staffDiv = document.createElement("input");
+const staffDiv = document.createElement("div");
 exports.staffDiv = staffDiv;
 staffDiv.style.fontFamily = "Bravura Text BB";
 staffDiv.style.fontSize = "40px"; // TODO: extract to styles.scss
