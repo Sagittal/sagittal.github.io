@@ -15643,6 +15643,7 @@ const applySmartSpace = (space) => {
         return general_1.sumTexts(useUpExistingStaffSpaceUnicode, unicodeMap_1.st, remainingStaffSpaceUnicode);
     }
 };
+// TODO: may well need to just include these on each key, or make it optional `code: {char: '', width?: 13}` like that
 const getSpaceForUnicode = (unicode) => {
     if ([...Object.values(unicodeMap_1.CLEFS)].includes(unicode))
         return 24;
@@ -15707,7 +15708,8 @@ const staffCodeToUnicode = (staffCode) => {
         .replace(/\t/g, " ")
         .split(" ")
         .map((userInput) => {
-        if (userInput === "sp") {
+        if (["sp", "ad", ";"].includes(userInput)) {
+            // TODO: rename most "space" stuff to "advance"
             return applySmartSpace(globals_1.staffState.smartSpace);
         }
         else if (userInput.match("sp") && globals_1.staffState.smartStaffOn) {
@@ -17004,6 +17006,7 @@ const combiningStaffPositions_1 = __webpack_require__(256);
 const types_1 = __webpack_require__(247);
 const unicodeFromUnknownCode_1 = __webpack_require__(258);
 const unicodeMap_1 = __webpack_require__(259);
+// TODO: accept a user custom codes JSON object to merge in here too
 const CODES_WITH_BASS = {
     ...unicodeMap_1.CODES,
     ...combiningStaffPositions_1.BASS_COMBINING_STAFF_POSITION_UNICODE_MAP,
