@@ -94,7 +94,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __webpack_require__(1);
 // TODO: this is horrible. eventually use React to have some actual control over the layout
 __webpack_require__(7);
-const replace_1 = __webpack_require__(246);
+const replace_1 = __webpack_require__(248);
 replace_1.replaceStaffCodeWithUnicodeApp();
 // TODO: I think we may just want multiple folders within dist
 //  One for the app, and one for other stuff like the bbCode stuff
@@ -586,14 +586,16 @@ staffCodeInput_1.controlsDiv.appendChild(buttonDiv);
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.staffCodeInput = exports.controlsDiv = void 0;
 const general_1 = __webpack_require__(9);
-const replace_1 = __webpack_require__(246);
+const constants_1 = __webpack_require__(246);
+const replace_1 = __webpack_require__(248);
 const controlsDiv = document.createElement("div");
 exports.controlsDiv = controlsDiv;
 document.body.appendChild(controlsDiv);
 const staffCodeInput = document.createElement("textarea");
 exports.staffCodeInput = staffCodeInput;
 controlsDiv.appendChild(staffCodeInput);
-staffCodeInput.value = "st24 tbcf sp"; // TODO: constantize with the forum thing
+// TODO: Smart Clefs™: if you type a treble clef, it knows to use treble, etc.
+staffCodeInput.value = constants_1.TREBLE_CLEF_INITIATION;
 staffCodeInput.addEventListener("keydown", () => { general_1.doOnNextEventLoop(replace_1.replaceStaffCodeWithUnicodeApp, 100); });
 staffCodeInput.addEventListener("paste", () => { general_1.doOnNextEventLoop(replace_1.replaceStaffCodeWithUnicodeApp, 100); });
 staffCodeInput.addEventListener("cut", () => { general_1.doOnNextEventLoop(replace_1.replaceStaffCodeWithUnicodeApp, 100); });
@@ -15105,17 +15107,19 @@ exports.SKIP_THE_FINAL_EMPTY_LINE = SKIP_THE_FINAL_EMPTY_LINE;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.replaceStaffCodeWithUnicodeApp = void 0;
-const staffCodeInput_1 = __webpack_require__(8);
-const staffCodeToUnicode_1 = __webpack_require__(247);
-const staffDiv_1 = __webpack_require__(262);
-const vectorize_1 = __webpack_require__(263);
-const replaceStaffCodeWithUnicodeApp = () => {
-    const unicode = staffCodeToUnicode_1.staffCodeToUnicode(staffCodeInput_1.staffCodeInput.value);
-    staffDiv_1.staffDiv.textContent = unicode;
-    vectorize_1.vectorize(unicode);
+exports.INITIAL_STAFF_STATE = exports.TREBLE_CLEF_INITIATION = exports.BASS_CLEF_INITIATION = void 0;
+const types_1 = __webpack_require__(247);
+const BASS_CLEF_INITIATION = `${types_1.Code["st"]} ${types_1.Code["bscf"]} sp `;
+exports.BASS_CLEF_INITIATION = BASS_CLEF_INITIATION;
+const TREBLE_CLEF_INITIATION = `${types_1.Code["st"]} ${types_1.Code["tbcf"]} sp `;
+exports.TREBLE_CLEF_INITIATION = TREBLE_CLEF_INITIATION;
+const INITIAL_STAFF_STATE = {
+    smartSpace: 0,
+    // TODO: autoStaff, autoStaffOn, and smartSpace
+    smartStaff: 0,
+    smartStaffOn: false,
 };
-exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
+exports.INITIAL_STAFF_STATE = INITIAL_STAFF_STATE;
 
 
 /***/ }),
@@ -15124,223 +15128,7 @@ exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
 
 "use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.staffCodeToUnicode = void 0;
-const general_1 = __webpack_require__(9);
-const accidentals_1 = __webpack_require__(248);
-// TODO: clean these up
-// tslint:disable-next-line:no-reaching-imports
-const conventional_1 = __webpack_require__(249);
-const sagittal_1 = __webpack_require__(253);
-const combiningStaffPositions_1 = __webpack_require__(255);
-const constants_1 = __webpack_require__(256);
-const getUnicode_1 = __webpack_require__(257);
-const globals_1 = __webpack_require__(260);
-const space_1 = __webpack_require__(261);
-const types_1 = __webpack_require__(250);
-const unicodeMap_1 = __webpack_require__(259);
-const canBePositioned = (unicode) => Object.values(accidentals_1.ACCIDENTALS).includes(unicode)
-    || Object.values(unicodeMap_1.NOTES).includes(unicode)
-    || Object.values(unicodeMap_1.BEAMED_GROUPS_OF_NOTES).includes(unicode)
-    || Object.values(unicodeMap_1.CLEFS).includes(unicode)
-    || unicode === unicodeMap_1.lgln;
-// TODO: it would be better if we went by the unicode range, to support arbitrary unicode input
-//  I think that would involve every unicode map object also containing the unicode codepoint in addition to the unicode
-//  Or perhaps... instead... sigh... so we can just see it, rather than in a comment, and everything passes through that
-//  Helper method to convert to the actual unicode symbol from its codepoint.
-//  That is, assuming the \u form of it can also be looked at and compared to a range
-//  Actually I don't think it'll be that bad,
-//  You can just take the existing unicode and say > \uE022 and < \uEF88 or whatever
-// tslint:disable:max-line-length
-/*
-\uE022 to \uE02F // leger lines
-\uE050 to \uE07F // clefs
-\uE0A0 to \uE21F // noteheads, notes, beamed groups, stems
-\uE240 to \uE4FF // flags, accidentals, articulation, holds and pauses, rests
-\uE900 to \uEA1F // Medieval and Renaissance: clefs, prolations, noteheads and stems, notes, oblique forms, plainchant single/multi/articulations, accidentals, rests, miscellany.
-\uEC30 to \uEC3F // Kievan square notation
- */
-const applySmartSpace = (space) => {
-    if (!globals_1.staffState.smartStaffOn) { // TODO: this could probably be simppiflied
-        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartSpace);
-        globals_1.staffState.smartSpace = 0;
-        return spaceUnicode;
-    }
-    // We've got enough staff ahead of us still to apply the advance and still be within it
-    if (globals_1.staffState.smartStaff >= space) {
-        const spaceUnicode = space_1.computeSpaceUnicode(space);
-        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff - space;
-        globals_1.staffState.smartSpace = 0;
-        return spaceUnicode;
-    }
-    else {
-        const useUpExistingStaffSpaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartStaff);
-        const remainingSpaceWeNeedToApply = space - globals_1.staffState.smartStaff;
-        const remainingStaffSpaceUnicode = space_1.computeSpaceUnicode(remainingSpaceWeNeedToApply);
-        globals_1.staffState.smartStaff = 24 - remainingSpaceWeNeedToApply;
-        globals_1.staffState.smartSpace = 0;
-        return general_1.sumTexts(useUpExistingStaffSpaceUnicode, unicodeMap_1.st, remainingStaffSpaceUnicode);
-    }
-};
-const getSpaceForUnicode = (unicode) => {
-    if ([...Object.values(unicodeMap_1.CLEFS)].includes(unicode))
-        return 24;
-    else if ([unicodeMap_1.ntdb].includes(unicode))
-        return 23;
-    // 22
-    else if ([unicodeMap_1.nt8, unicodeMap_1.nt16].includes(unicode))
-        return 21;
-    // 20
-    // 19
-    // 18
-    else if ([unicodeMap_1.tm0, unicodeMap_1.tm1, unicodeMap_1.tm2, unicodeMap_1.tm3, unicodeMap_1.tm4, unicodeMap_1.tm5, unicodeMap_1.tm6, unicodeMap_1.tm7, unicodeMap_1.tm8, unicodeMap_1.tm9, unicodeMap_1.tmcm].includes(unicode))
-        return 17;
-    // 16
-    else if ([conventional_1.bb].includes(unicode))
-        return 15;
-    else if ([sagittal_1._35LUp, sagittal_1._35LDown].includes(unicode))
-        return 14;
-    else if ([unicodeMap_1.lgln, unicodeMap_1.nt1, unicodeMap_1.nt2, unicodeMap_1.nt4, unicodeMap_1.nt2dn, unicodeMap_1.nt4dn, unicodeMap_1.nt8dn, unicodeMap_1.nt16dn, conventional_1.x, sagittal_1._11LUp, sagittal_1._11LDown, sagittal_1._11MUp, sagittal_1._11MDown].includes(unicode))
-        return 13;
-    // 12
-    else if ([sagittal_1._35MUp, sagittal_1._35MDown].includes(unicode))
-        return 11;
-    else if ([conventional_1.sharp, conventional_1.smallDoubleSharp, sagittal_1._25SUp, sagittal_1._25SDown].includes(unicode))
-        return 10;
-    else if ([conventional_1.b].includes(unicode))
-        return 9;
-    // 8
-    else if ([conventional_1.n, sagittal_1._5v7kUp, sagittal_1._5v7kDown, sagittal_1._5CUp, sagittal_1._5CDown, sagittal_1._7CUp, sagittal_1._7CDown].includes(unicode))
-        return 7;
-    else if ([unicodeMap_1.agdt].includes(unicode))
-        return 6;
-    // 5
-    // 4
-    // 3
-    // 2
-    // 1
-    else if (true)
-        return 0;
-    return 11;
-};
-const recordSpace = (unicode) => {
-    globals_1.staffState.smartSpace = general_1.max(globals_1.staffState.smartSpace, getSpaceForUnicode(unicode));
-};
-const recordStaff = (userInput) => {
-    globals_1.staffState.smartStaffOn = true;
-    if (userInput === types_1.Code["st"])
-        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
-    if (userInput === types_1.Code["st8"])
-        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 8;
-    if (userInput === types_1.Code["st16"])
-        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 16;
-    if (userInput === types_1.Code["st24"])
-        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
-};
-const staffCodeToUnicode = (staffCode) => {
-    general_1.setAllPropertiesOfObjectOnAnother({ objectToChange: globals_1.staffState, objectWithProperties: constants_1.INITIAL_STAFF_STATE });
-    let staffPosition = ""; // TODO: blank uni constant
-    return `${staffCode.toLowerCase()} sp`
-        .replace(/<br>/g, " ")
-        .replace(/\n/g, " ")
-        .replace(/\t/g, " ")
-        .split(" ")
-        .map((userInput) => {
-        if (userInput === "sp") {
-            return applySmartSpace(globals_1.staffState.smartSpace);
-        }
-        else if (userInput.match("sp") && globals_1.staffState.smartStaffOn) {
-            const amount = parseInt(userInput.replace("sp", ""));
-            return applySmartSpace(amount);
-        }
-        if (["st", "st8", "st16", "st24"].includes(userInput)) {
-            recordStaff(userInput);
-        }
-        let unicode = getUnicode_1.getUnicode(userInput, types_1.Clef.TREBLE);
-        let output;
-        if (combiningStaffPositions_1.COMBINING_STAFF_POSITIONS.includes(unicode)) {
-            staffPosition = unicode;
-            output = "";
-        }
-        else if (canBePositioned(unicode)) {
-            output = general_1.sumTexts(staffPosition, unicode);
-        }
-        else {
-            output = unicode;
-        }
-        recordSpace(unicode);
-        return output;
-    })
-        .join("");
-};
-exports.staffCodeToUnicode = staffCodeToUnicode;
-
-
-/***/ }),
-/* 248 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACCIDENTALS = void 0;
-const conventional_1 = __webpack_require__(249);
-const ehejipn_1 = __webpack_require__(251);
-const sagittal_1 = __webpack_require__(253);
-const unconventional_1 = __webpack_require__(252);
-const upsAndDowns_1 = __webpack_require__(254);
-const ACCIDENTALS = {
-    ...conventional_1.CONVENTIONAL_ACCIDENTALS,
-    ...ehejipn_1.EHEJIPN_ACCIDENTALS,
-    ...sagittal_1.SAGITTAL_ACCIDENTALS,
-    ...unconventional_1.UNCONVENTIONAL_ACCIDENTALS,
-    ...upsAndDowns_1.UPS_AND_DOWNS_ACCIDENTALS,
-};
-exports.ACCIDENTALS = ACCIDENTALS;
-
-
-/***/ }),
-/* 249 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.smallDoubleSharp = exports.bb = exports.x = exports.b = exports.sharp = exports.n = exports.h = exports.CONVENTIONAL_ACCIDENTALS = void 0;
-const types_1 = __webpack_require__(250);
-const h = ""; // U+E261   natural
-exports.h = h;
-const n = h;
-exports.n = n;
-const sharp = ""; // U+E262   sharp
-exports.sharp = sharp;
-const b = ""; // U+E260   flat
-exports.b = b;
-const x = ""; // U+E47D   double sharp
-exports.x = x;
-const bb = ""; // U+E264   double flat
-exports.bb = bb;
-const smallDoubleSharp = ""; // U+E263   small double-sharp*
-exports.smallDoubleSharp = smallDoubleSharp;
-// * Not the same as "x" or "X", which is the (Sagittal-compatible) large double-sharp.
-const CONVENTIONAL_ACCIDENTALS = {
-    [types_1.Code.h]: h,
-    [types_1.Code.n]: n,
-    [types_1.Code["#"]]: sharp,
-    [types_1.Code.b]: b,
-    [types_1.Code.x]: x,
-    [types_1.Code.bb]: bb,
-    [types_1.Code.smallDoubleSharp]: smallDoubleSharp,
-};
-exports.CONVENTIONAL_ACCIDENTALS = CONVENTIONAL_ACCIDENTALS;
-
-
-/***/ }),
-/* 250 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
+// TODO: wait, should the core of staffCode be extracted to its own repo, so others can contribute to it?
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Code = exports.Clef = void 0;
 var Clef;
@@ -15768,7 +15556,248 @@ exports.Code = Code;
 
 
 /***/ }),
+/* 248 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.replaceStaffCodeWithUnicodeApp = void 0;
+const staffCodeInput_1 = __webpack_require__(8);
+const staffCodeToUnicode_1 = __webpack_require__(249);
+const staffDiv_1 = __webpack_require__(262);
+const vectorize_1 = __webpack_require__(263);
+const replaceStaffCodeWithUnicodeApp = () => {
+    const unicode = staffCodeToUnicode_1.staffCodeToUnicode(staffCodeInput_1.staffCodeInput.value);
+    staffDiv_1.staffDiv.textContent = unicode;
+    vectorize_1.vectorize(unicode);
+};
+exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
+
+
+/***/ }),
+/* 249 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.staffCodeToUnicode = void 0;
+const general_1 = __webpack_require__(9);
+const accidentals_1 = __webpack_require__(250);
+// TODO: clean these up
+// tslint:disable-next-line:no-reaching-imports
+const conventional_1 = __webpack_require__(251);
+const sagittal_1 = __webpack_require__(254);
+const combiningStaffPositions_1 = __webpack_require__(256);
+const constants_1 = __webpack_require__(246);
+const getUnicode_1 = __webpack_require__(257);
+const globals_1 = __webpack_require__(260);
+const space_1 = __webpack_require__(261);
+const types_1 = __webpack_require__(247);
+const unicodeMap_1 = __webpack_require__(259);
+// TODO: obviously break this huge file down a lot
+const canBePositioned = (unicode) => Object.values(accidentals_1.ACCIDENTALS).includes(unicode)
+    || Object.values(unicodeMap_1.NOTES).includes(unicode)
+    || Object.values(unicodeMap_1.BEAMED_GROUPS_OF_NOTES).includes(unicode)
+    || Object.values(unicodeMap_1.CLEFS).includes(unicode)
+    || unicode === unicodeMap_1.lgln;
+// TODO: it would be better if we went by the unicode range, to support arbitrary unicode input
+//  I think that would involve every unicode map object also containing the unicode codepoint in addition to the unicode
+//  Or perhaps... instead... sigh... so we can just see it, rather than in a comment, and everything passes through that
+//  Helper method to convert to the actual unicode symbol from its codepoint.
+//  That is, assuming the \u form of it can also be looked at and compared to a range
+//  Actually I don't think it'll be that bad,
+//  You can just take the existing unicode and say > \uE022 and < \uEF88 or whatever
+// tslint:disable:max-line-length
+/*
+\uE022 to \uE02F // leger lines
+\uE050 to \uE07F // clefs
+\uE0A0 to \uE21F // noteheads, notes, beamed groups, stems
+\uE240 to \uE4FF // flags, accidentals, articulation, holds and pauses, rests
+\uE900 to \uEA1F // Medieval and Renaissance: clefs, prolations, noteheads and stems, notes, oblique forms, plainchant single/multi/articulations, accidentals, rests, miscellany.
+\uEC30 to \uEC3F // Kievan square notation
+ */
+// TODO: maybe Auto Staff opt-out, rather than opt-in.
+// TODO: and related, do not take clef as a bbCode argument
+//  See forum post after this one: http://forum.sagittal.org/viewtopic.php?p=3095#p3095
+const applySmartSpace = (space) => {
+    if (!globals_1.staffState.smartStaffOn) { // TODO: this could probably be simplified
+        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartSpace);
+        globals_1.staffState.smartSpace = 0;
+        return spaceUnicode;
+    }
+    // We've got enough staff ahead of us still to apply the advance and still be within it
+    if (globals_1.staffState.smartStaff >= space) {
+        const spaceUnicode = space_1.computeSpaceUnicode(space);
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff - space;
+        globals_1.staffState.smartSpace = 0;
+        return spaceUnicode;
+    }
+    else {
+        const useUpExistingStaffSpaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartStaff);
+        const remainingSpaceWeNeedToApply = space - globals_1.staffState.smartStaff;
+        const remainingStaffSpaceUnicode = space_1.computeSpaceUnicode(remainingSpaceWeNeedToApply);
+        globals_1.staffState.smartStaff = 24 - remainingSpaceWeNeedToApply;
+        globals_1.staffState.smartSpace = 0;
+        return general_1.sumTexts(useUpExistingStaffSpaceUnicode, unicodeMap_1.st, remainingStaffSpaceUnicode);
+    }
+};
+const getSpaceForUnicode = (unicode) => {
+    if ([...Object.values(unicodeMap_1.CLEFS)].includes(unicode))
+        return 24;
+    else if ([unicodeMap_1.ntdb].includes(unicode))
+        return 23;
+    // 22
+    else if ([unicodeMap_1.nt8, unicodeMap_1.nt16].includes(unicode))
+        return 21;
+    // 20
+    // 19
+    // 18
+    else if ([unicodeMap_1.tm0, unicodeMap_1.tm1, unicodeMap_1.tm2, unicodeMap_1.tm3, unicodeMap_1.tm4, unicodeMap_1.tm5, unicodeMap_1.tm6, unicodeMap_1.tm7, unicodeMap_1.tm8, unicodeMap_1.tm9, unicodeMap_1.tmcm].includes(unicode))
+        return 17;
+    // 16
+    else if ([conventional_1.bb].includes(unicode))
+        return 15;
+    else if ([sagittal_1._35LUp, sagittal_1._35LDown].includes(unicode))
+        return 14;
+    else if ([unicodeMap_1.lgln, unicodeMap_1.nt1, unicodeMap_1.nt2, unicodeMap_1.nt4, unicodeMap_1.nt2dn, unicodeMap_1.nt4dn, unicodeMap_1.nt8dn, unicodeMap_1.nt16dn, conventional_1.x, sagittal_1._11LUp, sagittal_1._11LDown, sagittal_1._11MUp, sagittal_1._11MDown].includes(unicode))
+        return 13;
+    // 12
+    else if ([sagittal_1._35MUp, sagittal_1._35MDown].includes(unicode))
+        return 11;
+    else if ([conventional_1.sharp, conventional_1.smallDoubleSharp, sagittal_1._25SUp, sagittal_1._25SDown].includes(unicode))
+        return 10;
+    else if ([conventional_1.b].includes(unicode))
+        return 9;
+    // 8
+    else if ([conventional_1.n, sagittal_1._5v7kUp, sagittal_1._5v7kDown, sagittal_1._5CUp, sagittal_1._5CDown, sagittal_1._7CUp, sagittal_1._7CDown].includes(unicode))
+        return 7;
+    else if ([unicodeMap_1.agdt].includes(unicode))
+        return 6;
+    // 5
+    // 4
+    // 3
+    // 2
+    // 1
+    else if (true)
+        return 0;
+    return 11;
+};
+const recordSpace = (unicode) => {
+    globals_1.staffState.smartSpace = general_1.max(globals_1.staffState.smartSpace, getSpaceForUnicode(unicode));
+};
+const recordStaff = (userInput) => {
+    globals_1.staffState.smartStaffOn = true;
+    if (userInput === types_1.Code["st"])
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
+    if (userInput === types_1.Code["st8"])
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 8;
+    if (userInput === types_1.Code["st16"])
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 16;
+    if (userInput === types_1.Code["st24"])
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
+};
+const staffCodeToUnicode = (staffCode) => {
+    general_1.setAllPropertiesOfObjectOnAnother({ objectToChange: globals_1.staffState, objectWithProperties: constants_1.INITIAL_STAFF_STATE });
+    let staffPosition = ""; // TODO: blank uni constant
+    return `${staffCode.toLowerCase()} sp`
+        .replace(/<br>/g, " ")
+        .replace(/\n/g, " ")
+        .replace(/\t/g, " ")
+        .split(" ")
+        .map((userInput) => {
+        if (userInput === "sp") {
+            return applySmartSpace(globals_1.staffState.smartSpace);
+        }
+        else if (userInput.match("sp") && globals_1.staffState.smartStaffOn) {
+            const amount = parseInt(userInput.replace("sp", ""));
+            return applySmartSpace(amount);
+        }
+        if (["st", "st8", "st16", "st24"].includes(userInput)) {
+            recordStaff(userInput);
+        }
+        let unicode = getUnicode_1.getUnicode(userInput, types_1.Clef.TREBLE);
+        let output;
+        if (combiningStaffPositions_1.COMBINING_STAFF_POSITIONS.includes(unicode)) {
+            staffPosition = unicode;
+            output = "";
+        }
+        else if (canBePositioned(unicode)) {
+            output = general_1.sumTexts(staffPosition, unicode);
+        }
+        else {
+            output = unicode;
+        }
+        recordSpace(unicode);
+        return output;
+    })
+        .join("");
+};
+exports.staffCodeToUnicode = staffCodeToUnicode;
+
+
+/***/ }),
+/* 250 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ACCIDENTALS = void 0;
+const conventional_1 = __webpack_require__(251);
+const ehejipn_1 = __webpack_require__(252);
+const sagittal_1 = __webpack_require__(254);
+const unconventional_1 = __webpack_require__(253);
+const upsAndDowns_1 = __webpack_require__(255);
+const ACCIDENTALS = {
+    ...conventional_1.CONVENTIONAL_ACCIDENTALS,
+    ...ehejipn_1.EHEJIPN_ACCIDENTALS,
+    ...sagittal_1.SAGITTAL_ACCIDENTALS,
+    ...unconventional_1.UNCONVENTIONAL_ACCIDENTALS,
+    ...upsAndDowns_1.UPS_AND_DOWNS_ACCIDENTALS,
+};
+exports.ACCIDENTALS = ACCIDENTALS;
+
+
+/***/ }),
 /* 251 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.smallDoubleSharp = exports.bb = exports.x = exports.b = exports.sharp = exports.n = exports.h = exports.CONVENTIONAL_ACCIDENTALS = void 0;
+const types_1 = __webpack_require__(247);
+const h = ""; // U+E261   natural
+exports.h = h;
+const n = h;
+exports.n = n;
+const sharp = ""; // U+E262   sharp
+exports.sharp = sharp;
+const b = ""; // U+E260   flat
+exports.b = b;
+const x = ""; // U+E47D   double sharp
+exports.x = x;
+const bb = ""; // U+E264   double flat
+exports.bb = bb;
+const smallDoubleSharp = ""; // U+E263   small double-sharp*
+exports.smallDoubleSharp = smallDoubleSharp;
+// * Not the same as "x" or "X", which is the (Sagittal-compatible) large double-sharp.
+const CONVENTIONAL_ACCIDENTALS = {
+    [types_1.Code.h]: h,
+    [types_1.Code.n]: n,
+    [types_1.Code["#"]]: sharp,
+    [types_1.Code.b]: b,
+    [types_1.Code.x]: x,
+    [types_1.Code.bb]: bb,
+    [types_1.Code.smallDoubleSharp]: smallDoubleSharp,
+};
+exports.CONVENTIONAL_ACCIDENTALS = CONVENTIONAL_ACCIDENTALS;
+
+
+/***/ }),
+/* 252 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15777,9 +15806,9 @@ exports.Code = Code;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ehejipnNaturalTemperedSemitone = exports.ehejipnFlatTemperedSemitone = exports.ehejipnDoubleFlatTemperedSemitone = exports.ehejipnCombiningCloseCurlyBrace = exports.ehejipnCombiningOpenCurlyBrace = exports.ehejipn23Utonal = exports.ehejipn23Otonal = exports.ehejipn19Otonal = exports.ehejipn19Utonal = exports.ehejipn17Utonal = exports.ehejipn17Otonal = exports.ehejipn13Utonal = exports.ehejipn13Otonal = exports.ehejipn11Otonal = exports.ehejipn11Utonal = exports.ehejipnDouble7Utonal = exports.ehejipnDouble7Otonal = exports.ehejipn7Utonal = exports.ehejipn7Otonal = exports.ehejipnDoubleSharpTriple5Utonal = exports.ehejipnSharpTriple5Utonal = exports.ehejipnNaturalTriple5Utonal = exports.ehejipnFlatTriple5Utonal = exports.ehejipnDoubleFlatTriple5Utonal = exports.ehejipnDoubleSharpTriple5Otonal = exports.ehejipnSharpTriple5Otonal = exports.ehejipnNaturalTriple5Otonal = exports.ehejipnFlatTriple5Otonal = exports.ehejipnDoubleFlatTriple5Otonal = exports.ehejipnDoubleSharpDouble5Utonal = exports.ehejipnSharpDouble5Utonal = exports.ehejipnNaturalDouble5Utonal = exports.ehejipnFlatDouble5Utonal = exports.ehejipnDoubleFlatDouble5Utonal = exports.ehejipnDoubleSharpDouble5Otonal = exports.ehejipnSharpDouble5Otonal = exports.ehejipnNaturalDouble5Otonal = exports.ehejipnFlatDouble5Otonal = exports.ehejipnDoubleFlatDouble5Otonal = exports.ehejipnDoubleSharp5Utonal = exports.ehejipnSharp5Utonal = exports.ehejipnNatural5Utonal = exports.ehejipnFlat5Utonal = exports.ehejipnDoubleFlat5Utonal = exports.ehejipnDoubleSharp5Otonal = exports.ehejipnSharp5Otonal = exports.ehejipnNatural5Otonal = exports.ehejipnFlat5Otonal = exports.ehejipnDoubleFlat5Otonal = exports.EHEJIPN_ACCIDENTALS = void 0;
 exports.accidentalThreeQuarterTonesFlatZimmermann = exports.ehejipnEnharmonicallyReinterpretEquals = exports.ehejipnEnharmonicallyReinterpretAlmostEqual = exports.ehejipnEnharmonicallyReinterpret = exports.ehejipn53Utonal = exports.ehejipn53Otonal = exports.ehejipnQuarterSharpTemperedSemitone = exports.ehejipnQuarterFlatTemperedSemitone = exports.ehejipnDoubleSharpTemperedSemitone = exports.ehejipnSharpTemperedSemitone = void 0;
-const types_1 = __webpack_require__(250);
-const conventional_1 = __webpack_require__(249);
-const unconventional_1 = __webpack_require__(252);
+const types_1 = __webpack_require__(247);
+const conventional_1 = __webpack_require__(251);
+const unconventional_1 = __webpack_require__(253);
 // See: ttps://w3c.github.io/smufl/gitbook/tables/extended-helmholtz-ellis-accidentals-just-intonation.html
 // All EHEJIPN staffCodes start with a dot (full-stop). Unicodes are successive below.
 const ehejipnDoubleFlat5Otonal = ""; // U+E2C0
@@ -15973,14 +16002,14 @@ exports.EHEJIPN_ACCIDENTALS = EHEJIPN_ACCIDENTALS;
 
 
 /***/ }),
-/* 252 */
+/* 253 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wilsonMinus = exports.wilsonPlus = exports.sesquiflat = exports.sesquisharp = exports.semiflat = exports.semisharp = exports.UNCONVENTIONAL_ACCIDENTALS = void 0;
-const types_1 = __webpack_require__(250);
+const types_1 = __webpack_require__(247);
 // See: https://w3c.github.io/smufl/gitbook/tables/stein-zimmermann-accidentals-24-edo.html
 // And: https://w3c.github.io/smufl/gitbook/tables/other-accidentals.html
 const semisharp = ""; // U+E282   Half sharp (quarter-tone sharp) (Stein)
@@ -16007,7 +16036,7 @@ exports.UNCONVENTIONAL_ACCIDENTALS = UNCONVENTIONAL_ACCIDENTALS;
 
 
 /***/ }),
-/* 253 */
+/* 254 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16019,7 +16048,7 @@ exports.sharp5v23SDown = exports._5v23SDown = exports._5v23SUp = exports._5v19CD
 exports.sharp49SDown = exports.flat23SUp = exports.sharp23SDown = exports._5v13LDown = exports._5v13LUp = exports._11v19LDown = exports._11v19LUp = exports._49LDown = exports._49LUp = exports._5v49MDown = exports._5v49MUp = exports._49MDown = exports._49MUp = exports._11v19MDown = exports._11v19MUp = exports._5v13MDown = exports._5v13MUp = exports._23SDown = exports._23SUp = exports._49SDown = exports._49SUp = exports._7v19CDown = exports._7v19CUp = exports._19CDown = exports._19CUp = exports._11v49CDown = exports._11v49CUp = exports._143CDown = exports._143CUp = exports._17kDown = exports._17kUp = exports._19sDown = exports._19sUp = exports.doubleFlat23CUp = exports.doubleSharp23CDown = exports.doubleFlat5v19CUp = exports.doubleSharp5v19CDown = exports.doubleFlat5v23SUp = exports.doubleSharp5v23SDown = exports.flat5v23SDown = exports.sharp5v23SUp = exports.flat5v19CDown = exports.sharp5v19CUp = exports.flat23CDown = exports.sharp23CUp = exports.flat23CUp = exports.sharp23CDown = exports.flat5v19CUp = exports.sharp5v19CDown = exports.flat5v23SUp = void 0;
 exports.doubleSharp19CDown = exports.doubleFlat7v19CUp = exports.doubleSharp7v19CDown = exports.doubleFlat49SUp = exports.doubleSharp49SDown = exports.doubleFlat23SUp = exports.doubleSharp23SDown = exports.flat5v13LDown = exports.sharp5v13LUp = exports.flat11v19LDown = exports.sharp11v19LUp = exports.flat49LDown = exports.sharp49LUp = exports.flat5v49MDown = exports.sharp5v49MUp = exports.flat49MDown = exports.sharp49MUp = exports.flat11v19MDown = exports.sharp11v19MUp = exports.flat5v13MDown = exports.sharp5v13MUp = exports.flat23SDown = exports.sharp23SUp = exports.flat49SDown = exports.sharp49SUp = exports.flat7v19CDown = exports.sharp7v19CUp = exports.flat19CDown = exports.sharp19CUp = exports.flat11v49CDown = exports.sharp11v49CUp = exports.flat143CDown = exports.sharp143CUp = exports.flat17kDown = exports.sharp17kUp = exports.flat19sDown = exports.sharp19sUp = exports.flat19sUp = exports.sharp19sDown = exports.flat17kUp = exports.sharp17kDown = exports.flat143CUp = exports.sharp143CDown = exports.flat11v49CUp = exports.sharp11v49CDown = exports.flat19CUp = exports.sharp19CDown = exports.flat7v19CUp = exports.sharp7v19CDown = exports.flat49SUp = void 0;
 exports.dotDown = exports.dotUp = exports.wingbirdDown = exports.wingbirdUp = exports.wedgebirdDown = exports.wedgebirdUp = exports.hornbirdDown = exports.hornbirdUp = exports.mBirdDown = exports.mBirdUp = exports.wedgewingDown = exports.wedgewingUp = exports.hornwingDown = exports.hornwingUp = exports.mWingDown = exports.mWingUp = exports.wedgeDown = exports.wedgeUp = exports.hornDown = exports.hornUp = exports.birdDown = exports.birdUp = exports.wingDown = exports.wingUp = exports.tickDown = exports.tickUp = exports.shaftDown = exports.shaftUp = exports.doubleFlat19sUp = exports.doubleSharp19sDown = exports.doubleFlat17kUp = exports.doubleSharp17kDown = exports.doubleFlat143CUp = exports.doubleSharp143CDown = exports.doubleFlat11v49CUp = exports.doubleSharp11v49CDown = exports.doubleFlat19CUp = void 0;
-const types_1 = __webpack_require__(250);
+const types_1 = __webpack_require__(247);
 // TODO: I considered pulling these unicodes in from @sagittal/system, but decided not to bloat it for the forum
 const _5v7kUp = ""; // U+E300   5:7 kleisma up, (5:7k, ~11:13k, 7C less 5C)
 exports._5v7kUp = _5v7kUp;
@@ -16735,14 +16764,14 @@ exports.SAGITTAL_ACCIDENTALS = SAGITTAL_ACCIDENTALS;
 
 
 /***/ }),
-/* 254 */
+/* 255 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.down = exports.up = exports.UPS_AND_DOWNS_ACCIDENTALS = void 0;
-const types_1 = __webpack_require__(250);
+const types_1 = __webpack_require__(247);
 // See: https://w3c.github.io/smufl/gitbook/tables/arrows-and-arrowheads.html
 const up = ""; // U+EB88
 exports.up = up;
@@ -16756,7 +16785,7 @@ exports.UPS_AND_DOWNS_ACCIDENTALS = UPS_AND_DOWNS_ACCIDENTALS;
 
 
 /***/ }),
-/* 255 */
+/* 256 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16764,7 +16793,7 @@ exports.UPS_AND_DOWNS_ACCIDENTALS = UPS_AND_DOWNS_ACCIDENTALS;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bsf2 = exports.bsg2 = exports.bsa2 = exports.bsb2 = exports.bsc3 = exports.bsd3 = exports.bse3 = exports.bsf3 = exports.bsg3 = exports.bsa3 = exports.bsb3 = exports.bsc4 = exports.bsd4 = exports.bse4 = exports.tra3 = exports.trb3 = exports.trc4 = exports.trd4 = exports.tre4 = exports.trf4 = exports.trg4 = exports.tra4 = exports.trb4 = exports.trc5 = exports.trd5 = exports.tre5 = exports.trf5 = exports.trg5 = exports.tra5 = exports.trb5 = exports.trc6 = exports.staffPosLower8 = exports.staffPosLower7 = exports.staffPosLower6 = exports.staffPosLower5 = exports.staffPosLower4 = exports.staffPosLower3 = exports.staffPosLower2 = exports.staffPosLower1 = exports.staffPosCenter = exports.staffPosRaise1 = exports.staffPosRaise2 = exports.staffPosRaise3 = exports.staffPosRaise4 = exports.staffPosRaise5 = exports.staffPosRaise6 = exports.staffPosRaise7 = exports.staffPosRaise8 = exports.TREBLE_COMBINING_STAFF_POSITION_UNICODE_MAP = exports.BASS_COMBINING_STAFF_POSITION_UNICODE_MAP = void 0;
 exports.COMBINING_STAFF_POSITIONS = exports.a3 = exports.b3 = exports.c4 = exports.d4 = exports.e4 = exports.f4 = exports.g4 = exports.a4 = exports.b4 = exports.c5 = exports.d5 = exports.e5 = exports.f5 = exports.g5 = exports.a5 = exports.b5 = exports.c6 = exports.bsc2 = exports.bsd2 = exports.bse2 = void 0;
-const types_1 = __webpack_require__(250);
+const types_1 = __webpack_require__(247);
 const staffPosRaise8 = ""; // U+EB97
 exports.staffPosRaise8 = staffPosRaise8;
 const staffPosRaise7 = ""; // U+EB96
@@ -16964,22 +16993,6 @@ exports.COMBINING_STAFF_POSITIONS = COMBINING_STAFF_POSITIONS;
 
 
 /***/ }),
-/* 256 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.INITIAL_STAFF_STATE = void 0;
-const INITIAL_STAFF_STATE = {
-    smartSpace: 0,
-    smartStaff: 0,
-    smartStaffOn: false,
-};
-exports.INITIAL_STAFF_STATE = INITIAL_STAFF_STATE;
-
-
-/***/ }),
 /* 257 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -16987,8 +17000,8 @@ exports.INITIAL_STAFF_STATE = INITIAL_STAFF_STATE;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUnicode = void 0;
-const combiningStaffPositions_1 = __webpack_require__(255);
-const types_1 = __webpack_require__(250);
+const combiningStaffPositions_1 = __webpack_require__(256);
+const types_1 = __webpack_require__(247);
 const unicodeFromUnknownCode_1 = __webpack_require__(258);
 const unicodeMap_1 = __webpack_require__(259);
 const CODES_WITH_BASS = {
@@ -17031,8 +17044,8 @@ exports.unicodeFromUnknownCode = unicodeFromUnknownCode;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nt2 = exports.nt1 = exports.ntdb = exports.TIME_SIGNATURES = exports.tmdn = exports.tmnm = exports.tmcm = exports.tm9 = exports.tm8 = exports.tm7 = exports.tm6 = exports.tm5 = exports.tm4 = exports.tm3 = exports.tm2 = exports.tm1 = exports.tm0 = exports.CLEFS = exports._8vb = exports._8va = exports.bscf = exports.alcf = exports.tbcf = exports.BARS = exports.brlndb = exports.brln = exports.LEDGER_LINES = exports.STAFF_LINES = exports.lgln = exports.st = exports.st24 = exports.st16 = exports.st8 = exports.SPACES = exports.sp16 = exports.sp15 = exports.sp14 = exports.sp13 = exports.sp12 = exports.sp11 = exports.sp10 = exports.sp9 = exports.sp8 = exports.sp7 = exports.sp6 = exports.sp5 = exports.sp4 = exports.sp3 = exports.sp2 = exports.sp1 = void 0;
 exports.CODES = exports.BEAMED_GROUPS_OF_NOTES = exports.tp3 = exports.bm16 = exports.bm8 = exports.ntbm16 = exports.ntbm8 = exports.ntbmst = exports.DOTS = exports.agdt = exports.dt = exports.RESTS = exports.rs = exports.rs16 = exports.rs8 = exports.rs4 = exports.rs2 = exports.rs1 = exports.rsdb = exports.NOTES = exports.nt = exports.nt16dn = exports.nt16 = exports.nt8dn = exports.nt8 = exports.nt4dn = exports.nt4 = exports.nt2dn = void 0;
-const accidentals_1 = __webpack_require__(248);
-const types_1 = __webpack_require__(250);
+const accidentals_1 = __webpack_require__(250);
+const types_1 = __webpack_require__(247);
 const sp1 = " "; // U+200A                   HAIR SPACE
 exports.sp1 = sp1;
 const sp2 = " "; // U+2009                   THIN SPACE
@@ -17290,7 +17303,7 @@ exports.CODES = CODES;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.staffState = void 0;
-const constants_1 = __webpack_require__(256);
+const constants_1 = __webpack_require__(246);
 const staffState = JSON.parse(JSON.stringify(constants_1.INITIAL_STAFF_STATE));
 exports.staffState = staffState;
 
