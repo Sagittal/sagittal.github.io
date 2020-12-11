@@ -551,7 +551,7 @@ __webpack_require__.r(__webpack_exports__);
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const staffCodeInput_1 = __webpack_require__(8);
-const vectorize_1 = __webpack_require__(262);
+const vectorize_1 = __webpack_require__(263);
 const saveSvg = () => {
     const svg = vectorize_1.svgWrapper.querySelector("svg");
     if (!svg)
@@ -15108,11 +15108,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.replaceStaffCodeWithUnicodeApp = void 0;
 const staffCodeInput_1 = __webpack_require__(8);
 const staffCodeToUnicode_1 = __webpack_require__(247);
-const staffDiv_1 = __webpack_require__(261);
-const vectorize_1 = __webpack_require__(262);
+const staffDiv_1 = __webpack_require__(262);
+const vectorize_1 = __webpack_require__(263);
 const replaceStaffCodeWithUnicodeApp = () => {
     const unicode = staffCodeToUnicode_1.staffCodeToUnicode(staffCodeInput_1.staffCodeInput.value);
-    staffDiv_1.staffDiv.textContent = unicode;
+    staffDiv_1.staffDiv.value = unicode;
     vectorize_1.vectorize(unicode);
 };
 exports.replaceStaffCodeWithUnicodeApp = replaceStaffCodeWithUnicodeApp;
@@ -15133,11 +15133,12 @@ const accidentals_1 = __webpack_require__(248);
 const conventional_1 = __webpack_require__(249);
 const sagittal_1 = __webpack_require__(253);
 const combiningStaffPositions_1 = __webpack_require__(255);
-const getUnicode_1 = __webpack_require__(256);
-const globals_1 = __webpack_require__(259);
-const space_1 = __webpack_require__(260);
+const constants_1 = __webpack_require__(256);
+const getUnicode_1 = __webpack_require__(257);
+const globals_1 = __webpack_require__(260);
+const space_1 = __webpack_require__(261);
 const types_1 = __webpack_require__(250);
-const unicodeMap_1 = __webpack_require__(258);
+const unicodeMap_1 = __webpack_require__(259);
 const canBePositioned = (unicode) => Object.values(accidentals_1.ACCIDENTALS).includes(unicode)
     || Object.values(unicodeMap_1.NOTES).includes(unicode)
     || Object.values(unicodeMap_1.BEAMED_GROUPS_OF_NOTES).includes(unicode)
@@ -15160,30 +15161,24 @@ const canBePositioned = (unicode) => Object.values(accidentals_1.ACCIDENTALS).in
 \uEC30 to \uEC3F // Kievan square notation
  */
 const applySmartSpace = () => {
-    // console.log("is smsartstaff on?", staffGlobals.smartStaffOn)
-    if (!globals_1.staffGlobals.smartStaffOn) { // TODO: this could probably be simppiflied
-        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffGlobals.smartSpace);
-        globals_1.staffGlobals.smartSpace = 0;
+    if (!globals_1.staffState.smartStaffOn) { // TODO: this could probably be simppiflied
+        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartSpace);
+        globals_1.staffState.smartSpace = 0;
         return spaceUnicode;
     }
     // We've got enough staff ahead of us still to apply the advance and still be within it
-    if (globals_1.staffGlobals.smartStaff >= globals_1.staffGlobals.smartSpace) {
-        // console.log("ok have enough staff ahead of us", staffGlobals.smartStaff, "because we only need to apply this much space", staffGlobals.smartSpace)
-        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffGlobals.smartSpace);
-        globals_1.staffGlobals.smartStaff = globals_1.staffGlobals.smartStaff - globals_1.staffGlobals.smartSpace;
-        globals_1.staffGlobals.smartSpace = 0;
-        // console.log("there's now 0 space left, and ", staffGlobals.smartStaff, "staff left")
+    if (globals_1.staffState.smartStaff >= globals_1.staffState.smartSpace) {
+        const spaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartSpace);
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff - globals_1.staffState.smartSpace;
+        globals_1.staffState.smartSpace = 0;
         return spaceUnicode;
     }
     else {
-        // console.log("ok we have", staffGlobals.smartStaff, "staff ahead of us still")
-        // console.log("and this much space/advance we're going to apply now, which is more than that", staffGlobals.smartSpace)
-        const useUpExistingStaffSpaceUnicode = space_1.computeSpaceUnicode(globals_1.staffGlobals.smartStaff);
-        const remainingSpaceWeNeedToApply = globals_1.staffGlobals.smartSpace - globals_1.staffGlobals.smartStaff;
-        // console.log("having used that up we have this much space left", remainingSpaceWeNeedToApply)
+        const useUpExistingStaffSpaceUnicode = space_1.computeSpaceUnicode(globals_1.staffState.smartStaff);
+        const remainingSpaceWeNeedToApply = globals_1.staffState.smartSpace - globals_1.staffState.smartStaff;
         const remainingStaffSpaceUnicode = space_1.computeSpaceUnicode(remainingSpaceWeNeedToApply);
-        globals_1.staffGlobals.smartStaff = 24 - remainingSpaceWeNeedToApply;
-        globals_1.staffGlobals.smartSpace = 0;
+        globals_1.staffState.smartStaff = 24 - remainingSpaceWeNeedToApply;
+        globals_1.staffState.smartSpace = 0;
         return general_1.sumTexts(useUpExistingStaffSpaceUnicode, unicodeMap_1.st, remainingStaffSpaceUnicode);
     }
 };
@@ -15228,28 +15223,23 @@ const getSpaceForUnicode = (unicode) => {
     return 11;
 };
 const recordSpace = (unicode) => {
-    globals_1.staffGlobals.smartSpace = general_1.max(globals_1.staffGlobals.smartSpace, getSpaceForUnicode(unicode));
+    globals_1.staffState.smartSpace = general_1.max(globals_1.staffState.smartSpace, getSpaceForUnicode(unicode));
 };
 const recordStaff = (userInput) => {
-    // console.log("we are recordin' some smart staff so we are turning it ON")
-    globals_1.staffGlobals.smartStaffOn = true;
+    globals_1.staffState.smartStaffOn = true;
     if (userInput === types_1.Code["st"])
-        globals_1.staffGlobals.smartStaff = globals_1.staffGlobals.smartStaff + 24;
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
     if (userInput === types_1.Code["st8"])
-        globals_1.staffGlobals.smartStaff = globals_1.staffGlobals.smartStaff + 8;
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 8;
     if (userInput === types_1.Code["st16"])
-        globals_1.staffGlobals.smartStaff = globals_1.staffGlobals.smartStaff + 16;
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 16;
     if (userInput === types_1.Code["st24"])
-        globals_1.staffGlobals.smartStaff = globals_1.staffGlobals.smartStaff + 24;
+        globals_1.staffState.smartStaff = globals_1.staffState.smartStaff + 24;
 };
 const staffCodeToUnicode = (staffCode) => {
-    // TODO: just reset. and this should be test covered, integration test?
-    globals_1.staffGlobals.smartStaffOn = false;
-    globals_1.staffGlobals.smartStaff = 0;
-    globals_1.staffGlobals.smartSpace = 0;
+    general_1.setAllPropertiesOfObjectOnAnother({ objectToChange: globals_1.staffState, objectWithProperties: constants_1.INITIAL_STAFF_STATE });
     let staffPosition = ""; // TODO: blank uni constant
     return `${staffCode.toLowerCase()} sp`
-        // return staffCode.toLowerCase()
         .replace(/<br>/g, " ")
         .replace(/\n/g, " ")
         .replace(/\t/g, " ")
@@ -16975,11 +16965,27 @@ exports.COMBINING_STAFF_POSITIONS = COMBINING_STAFF_POSITIONS;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.INITIAL_STAFF_STATE = void 0;
+const INITIAL_STAFF_STATE = {
+    smartSpace: 0,
+    smartStaff: 0,
+    smartStaffOn: false,
+};
+exports.INITIAL_STAFF_STATE = INITIAL_STAFF_STATE;
+
+
+/***/ }),
+/* 257 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUnicode = void 0;
 const combiningStaffPositions_1 = __webpack_require__(255);
 const types_1 = __webpack_require__(250);
-const unicodeFromUnknownCode_1 = __webpack_require__(257);
-const unicodeMap_1 = __webpack_require__(258);
+const unicodeFromUnknownCode_1 = __webpack_require__(258);
+const unicodeMap_1 = __webpack_require__(259);
 const CODES_WITH_BASS = {
     ...unicodeMap_1.CODES,
     ...combiningStaffPositions_1.BASS_COMBINING_STAFF_POSITION_UNICODE_MAP,
@@ -16999,7 +17005,7 @@ exports.getUnicode = getUnicode;
 
 
 /***/ }),
-/* 257 */
+/* 258 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17012,7 +17018,7 @@ exports.unicodeFromUnknownCode = unicodeFromUnknownCode;
 
 
 /***/ }),
-/* 258 */
+/* 259 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17272,23 +17278,20 @@ exports.CODES = CODES;
 
 
 /***/ }),
-/* 259 */
+/* 260 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.staffGlobals = void 0;
-let staffGlobals = {
-    smartSpace: 0,
-    smartStaff: 0,
-    smartStaffOn: false,
-};
-exports.staffGlobals = staffGlobals;
+exports.staffState = void 0;
+const constants_1 = __webpack_require__(256);
+const staffState = JSON.parse(JSON.stringify(constants_1.INITIAL_STAFF_STATE));
+exports.staffState = staffState;
 
 
 /***/ }),
-/* 260 */
+/* 261 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17296,7 +17299,7 @@ exports.staffGlobals = staffGlobals;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.computeSpaceUnicode = void 0;
 const general_1 = __webpack_require__(9);
-const unicodeMap_1 = __webpack_require__(258);
+const unicodeMap_1 = __webpack_require__(259);
 const BIGGEST_SPACE = 16;
 // TODO: ugh names are so bad
 const SPACES_ARRAY = [
@@ -17330,14 +17333,14 @@ exports.computeSpaceUnicode = computeSpaceUnicode;
 
 
 /***/ }),
-/* 261 */
+/* 262 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.staffDiv = void 0;
-const staffDiv = document.createElement("div");
+const staffDiv = document.createElement("input");
 exports.staffDiv = staffDiv;
 staffDiv.style.fontFamily = "Bravura Text BB";
 staffDiv.style.fontSize = "40px"; // TODO: extract to styles.scss
@@ -17346,14 +17349,14 @@ document.body.appendChild(staffDiv);
 
 
 /***/ }),
-/* 262 */
+/* 263 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.svgWrapper = exports.vectorize = void 0;
-const vectorizeText = __webpack_require__(263);
+const vectorizeText = __webpack_require__(264);
 const svgWrapper = document.createElement("div");
 exports.svgWrapper = svgWrapper;
 // TODO: Probably don't need to actually display the SVG once the concept is proven out
@@ -17388,7 +17391,7 @@ exports.vectorize = vectorize;
 
 
 /***/ }),
-/* 263 */
+/* 264 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17396,7 +17399,7 @@ exports.vectorize = vectorize;
 
 module.exports = createText
 
-var vectorizeText = __webpack_require__(264)
+var vectorizeText = __webpack_require__(265)
 var defaultCanvas = null
 var defaultContext = null
 
@@ -17420,18 +17423,18 @@ function createText(str, options) {
 
 
 /***/ }),
-/* 264 */
+/* 265 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = vectorizeText
 module.exports.processPixels = processPixels
 
-var surfaceNets = __webpack_require__(265)
-var ndarray = __webpack_require__(281)
-var simplify = __webpack_require__(284)
-var cleanPSLG = __webpack_require__(294)
-var cdt2d = __webpack_require__(330)
-var toPolygonCrappy = __webpack_require__(337)
+var surfaceNets = __webpack_require__(266)
+var ndarray = __webpack_require__(282)
+var simplify = __webpack_require__(285)
+var cleanPSLG = __webpack_require__(295)
+var cdt2d = __webpack_require__(331)
+var toPolygonCrappy = __webpack_require__(338)
 
 var TAG_bold = "b"
 var CHR_bold = 'b|'
@@ -17879,7 +17882,7 @@ function vectorizeText(str, canvas, context, options) {
 
 
 /***/ }),
-/* 265 */
+/* 266 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17887,9 +17890,9 @@ function vectorizeText(str, canvas, context, options) {
 
 module.exports = surfaceNets
 
-var generateContourExtractor = __webpack_require__(266)
-var triangulateCube = __webpack_require__(270)
-var zeroCrossings = __webpack_require__(275)
+var generateContourExtractor = __webpack_require__(267)
+var triangulateCube = __webpack_require__(271)
+var zeroCrossings = __webpack_require__(276)
 
 function buildSurfaceNets(order, dtype) {
   var dimension = order.length
@@ -18092,13 +18095,13 @@ function surfaceNets(array,level) {
 }
 
 /***/ }),
-/* 266 */
+/* 267 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var pool = __webpack_require__(267)
+var pool = __webpack_require__(268)
 
 module.exports = createSurfaceExtractor
 
@@ -18513,14 +18516,14 @@ function createSurfaceExtractor(args) {
 }
 
 /***/ }),
-/* 267 */
+/* 268 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(global) {
 
-var bits = __webpack_require__(268)
-var dup = __webpack_require__(269)
+var bits = __webpack_require__(269)
+var dup = __webpack_require__(270)
 var Buffer = __webpack_require__(116).Buffer
 
 //Legacy pool support
@@ -18772,7 +18775,7 @@ exports.clearCache = function clearCache() {
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(117)))
 
 /***/ }),
-/* 268 */
+/* 269 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18983,7 +18986,7 @@ exports.nextCombination = function(v) {
 
 
 /***/ }),
-/* 269 */
+/* 270 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19038,7 +19041,7 @@ function dupe(count, value) {
 module.exports = dupe
 
 /***/ }),
-/* 270 */
+/* 271 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19046,9 +19049,9 @@ module.exports = dupe
 
 module.exports = triangulateCube
 
-var perm = __webpack_require__(271)
-var sgn = __webpack_require__(273)
-var gamma = __webpack_require__(274)
+var perm = __webpack_require__(272)
+var sgn = __webpack_require__(274)
+var gamma = __webpack_require__(275)
 
 function triangulateCube(dimension) {
   if(dimension < 0) {
@@ -19077,14 +19080,14 @@ function triangulateCube(dimension) {
 }
 
 /***/ }),
-/* 271 */
+/* 272 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var pool = __webpack_require__(267)
-var inverse = __webpack_require__(272)
+var pool = __webpack_require__(268)
+var inverse = __webpack_require__(273)
 
 function rank(permutation) {
   var n = permutation.length
@@ -19169,7 +19172,7 @@ exports.unrank = unrank
 
 
 /***/ }),
-/* 272 */
+/* 273 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19186,7 +19189,7 @@ function invertPermutation(pi, result) {
 module.exports = invertPermutation
 
 /***/ }),
-/* 273 */
+/* 274 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19196,7 +19199,7 @@ module.exports = permutationSign
 
 var BRUTE_FORCE_CUTOFF = 32
 
-var pool = __webpack_require__(267)
+var pool = __webpack_require__(268)
 
 function permutationSign(p) {
   var n = p.length
@@ -19243,7 +19246,7 @@ function permutationSign(p) {
 }
 
 /***/ }),
-/* 274 */
+/* 275 */
 /***/ (function(module, exports) {
 
 // transliterated from the python snippet here:
@@ -19316,7 +19319,7 @@ module.exports.log = lngamma;
 
 
 /***/ }),
-/* 275 */
+/* 276 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19324,7 +19327,7 @@ module.exports.log = lngamma;
 
 module.exports = findZeroCrossings
 
-var core = __webpack_require__(276)
+var core = __webpack_require__(277)
 
 function findZeroCrossings(array, level) {
   var cross = []
@@ -19334,10 +19337,10 @@ function findZeroCrossings(array, level) {
 }
 
 /***/ }),
-/* 276 */
+/* 277 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(277)({
+module.exports = __webpack_require__(278)({
     args: ['array', {
         offset: [1],
         array: 0
@@ -19390,13 +19393,13 @@ module.exports = __webpack_require__(277)({
 
 
 /***/ }),
-/* 277 */
+/* 278 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var createThunk = __webpack_require__(278)
+var createThunk = __webpack_require__(279)
 
 function Procedure() {
   this.argTypes = []
@@ -19506,7 +19509,7 @@ module.exports = compileCwise
 
 
 /***/ }),
-/* 278 */
+/* 279 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19535,7 +19538,7 @@ module.exports = compileCwise
 //   return thunk(compile.bind1(proc))
 // }
 
-var compile = __webpack_require__(279)
+var compile = __webpack_require__(280)
 
 function createThunk(proc) {
   var code = ["'use strict'", "var CACHED={}"]
@@ -19599,13 +19602,13 @@ module.exports = createThunk
 
 
 /***/ }),
-/* 279 */
+/* 280 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var uniq = __webpack_require__(280)
+var uniq = __webpack_require__(281)
 
 // This function generates very simple loops analogous to how you typically traverse arrays (the outermost loop corresponds to the slowest changing index, the innermost loop to the fastest changing index)
 // TODO: If two arrays have the same strides (and offsets) there is potential for decreasing the number of "pointers" and related variables. The drawback is that the type signature would become more specific and that there would thus be less potential for caching, but it might still be worth it, especially when dealing with large numbers of arguments.
@@ -19964,7 +19967,7 @@ module.exports = generateCWiseOp
 
 
 /***/ }),
-/* 280 */
+/* 281 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20028,11 +20031,11 @@ module.exports = unique
 
 
 /***/ }),
-/* 281 */
+/* 282 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var iota = __webpack_require__(282)
-var isBuffer = __webpack_require__(283)
+var iota = __webpack_require__(283)
+var isBuffer = __webpack_require__(284)
 
 var hasTypedArrays  = ((typeof Float64Array) !== "undefined")
 
@@ -20383,7 +20386,7 @@ module.exports = wrappedNDArrayCtor
 
 
 /***/ }),
-/* 282 */
+/* 283 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20400,7 +20403,7 @@ function iota(n) {
 module.exports = iota
 
 /***/ }),
-/* 283 */
+/* 284 */
 /***/ (function(module, exports) {
 
 /*!
@@ -20427,7 +20430,7 @@ function isSlowBuffer (obj) {
 
 
 /***/ }),
-/* 284 */
+/* 285 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20435,8 +20438,8 @@ function isSlowBuffer (obj) {
 
 module.exports = simplifyPolygon
 
-var orient = __webpack_require__(285)
-var sc = __webpack_require__(291)
+var orient = __webpack_require__(286)
+var sc = __webpack_require__(292)
 
 function errorWeight(base, a, b) {
   var area = Math.abs(orient(base, a, b))
@@ -20704,16 +20707,16 @@ function simplifyPolygon(cells, positions, minArea) {
 }
 
 /***/ }),
-/* 285 */
+/* 286 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var twoProduct = __webpack_require__(286)
-var robustSum = __webpack_require__(287)
-var robustScale = __webpack_require__(288)
-var robustSubtract = __webpack_require__(290)
+var twoProduct = __webpack_require__(287)
+var robustSum = __webpack_require__(288)
+var robustScale = __webpack_require__(289)
+var robustSubtract = __webpack_require__(291)
 
 var NUM_EXPAND = 5
 
@@ -20900,7 +20903,7 @@ function generateOrientationProc() {
 generateOrientationProc()
 
 /***/ }),
-/* 286 */
+/* 287 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20939,7 +20942,7 @@ function twoProduct(a, b, result) {
 }
 
 /***/ }),
-/* 287 */
+/* 288 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21101,14 +21104,14 @@ function linearExpansionSum(e, f) {
 }
 
 /***/ }),
-/* 288 */
+/* 289 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var twoProduct = __webpack_require__(286)
-var twoSum = __webpack_require__(289)
+var twoProduct = __webpack_require__(287)
+var twoSum = __webpack_require__(290)
 
 module.exports = scaleLinearExpansion
 
@@ -21157,7 +21160,7 @@ function scaleLinearExpansion(e, scale) {
 }
 
 /***/ }),
-/* 289 */
+/* 290 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21180,7 +21183,7 @@ function fastTwoSum(a, b, result) {
 }
 
 /***/ }),
-/* 290 */
+/* 291 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21342,14 +21345,14 @@ function robustSubtract(e, f) {
 }
 
 /***/ }),
-/* 291 */
+/* 292 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
  "use restrict";
 
-var bits      = __webpack_require__(292)
-  , UnionFind = __webpack_require__(293)
+var bits      = __webpack_require__(293)
+  , UnionFind = __webpack_require__(294)
 
 //Returns the dimension of a cell complex
 function dimension(cells) {
@@ -21691,7 +21694,7 @@ exports.connectedComponents = connectedComponents
 
 
 /***/ }),
-/* 292 */
+/* 293 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21902,7 +21905,7 @@ exports.nextCombination = function(v) {
 
 
 /***/ }),
-/* 293 */
+/* 294 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21964,7 +21967,7 @@ UnionFind.prototype.link = function(x, y) {
 
 
 /***/ }),
-/* 294 */
+/* 295 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21972,16 +21975,16 @@ UnionFind.prototype.link = function(x, y) {
 
 module.exports = cleanPSLG
 
-var UnionFind = __webpack_require__(295)
-var boxIntersect = __webpack_require__(296)
-var segseg = __webpack_require__(303)
-var rat = __webpack_require__(304)
-var ratCmp = __webpack_require__(316)
-var ratToFloat = __webpack_require__(317)
-var ratVec = __webpack_require__(320)
-var nextafter = __webpack_require__(321)
+var UnionFind = __webpack_require__(296)
+var boxIntersect = __webpack_require__(297)
+var segseg = __webpack_require__(304)
+var rat = __webpack_require__(305)
+var ratCmp = __webpack_require__(317)
+var ratToFloat = __webpack_require__(318)
+var ratVec = __webpack_require__(321)
+var nextafter = __webpack_require__(322)
 
-var solveIntersection = __webpack_require__(322)
+var solveIntersection = __webpack_require__(323)
 
 // Bounds on a rational number when rounded to a float
 function boundRat (r) {
@@ -22352,7 +22355,7 @@ function cleanPSLG (points, edges, colors) {
 
 
 /***/ }),
-/* 295 */
+/* 296 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22420,7 +22423,7 @@ proto.link = function(x, y) {
 }
 
 /***/ }),
-/* 296 */
+/* 297 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22428,9 +22431,9 @@ proto.link = function(x, y) {
 
 module.exports = boxIntersectWrapper
 
-var pool = __webpack_require__(267)
-var sweep = __webpack_require__(297)
-var boxIntersectIter = __webpack_require__(299)
+var pool = __webpack_require__(268)
+var sweep = __webpack_require__(298)
+var boxIntersectIter = __webpack_require__(300)
 
 function boxEmpty(d, box) {
   for(var j=0; j<d; ++j) {
@@ -22564,7 +22567,7 @@ function boxIntersectWrapper(arg0, arg1, arg2) {
 }
 
 /***/ }),
-/* 297 */
+/* 298 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22578,9 +22581,9 @@ module.exports = {
   scanComplete:   scanComplete
 }
 
-var pool  = __webpack_require__(267)
-var bits  = __webpack_require__(268)
-var isort = __webpack_require__(298)
+var pool  = __webpack_require__(268)
+var bits  = __webpack_require__(269)
+var isort = __webpack_require__(299)
 
 //Flag for blue
 var BLUE_FLAG = (1<<28)
@@ -23004,7 +23007,7 @@ red_loop:
 }
 
 /***/ }),
-/* 298 */
+/* 299 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23246,7 +23249,7 @@ function quickSort(left, right, data) {
 }
 
 /***/ }),
-/* 299 */
+/* 300 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23254,14 +23257,14 @@ function quickSort(left, right, data) {
 
 module.exports = boxIntersectIter
 
-var pool = __webpack_require__(267)
-var bits = __webpack_require__(268)
-var bruteForce = __webpack_require__(300)
+var pool = __webpack_require__(268)
+var bits = __webpack_require__(269)
+var bruteForce = __webpack_require__(301)
 var bruteForcePartial = bruteForce.partial
 var bruteForceFull = bruteForce.full
-var sweep = __webpack_require__(297)
-var findMedian = __webpack_require__(301)
-var genPartition = __webpack_require__(302)
+var sweep = __webpack_require__(298)
+var findMedian = __webpack_require__(302)
+var genPartition = __webpack_require__(303)
 
 //Twiddle parameters
 var BRUTE_FORCE_CUTOFF    = 128       //Cut off for brute force search
@@ -23746,7 +23749,7 @@ function boxIntersectIter(
 }
 
 /***/ }),
-/* 300 */
+/* 301 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23896,7 +23899,7 @@ exports.partial = bruteForcePlanner(false)
 exports.full    = bruteForcePlanner(true)
 
 /***/ }),
-/* 301 */
+/* 302 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23904,7 +23907,7 @@ exports.full    = bruteForcePlanner(true)
 
 module.exports = findMedian
 
-var genPartition = __webpack_require__(302)
+var genPartition = __webpack_require__(303)
 
 var partitionStartLessThan = genPartition('lo<p0', ['p0'])
 
@@ -24044,7 +24047,7 @@ function findMedian(d, axis, start, end, boxes, ids) {
 }
 
 /***/ }),
-/* 302 */
+/* 303 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24070,7 +24073,7 @@ function genPartition(predicate, args) {
 }
 
 /***/ }),
-/* 303 */
+/* 304 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24078,7 +24081,7 @@ function genPartition(predicate, args) {
 
 module.exports = segmentsIntersect
 
-var orient = __webpack_require__(285)[3]
+var orient = __webpack_require__(286)[3]
 
 function checkCollinear(a0, a1, b0, b1) {
 
@@ -24123,18 +24126,18 @@ function segmentsIntersect(a0, a1, b0, b1) {
 }
 
 /***/ }),
-/* 304 */
+/* 305 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var isRat = __webpack_require__(305)
-var isBN = __webpack_require__(306)
-var num2bn = __webpack_require__(310)
-var str2bn = __webpack_require__(312)
-var rationalize = __webpack_require__(313)
-var div = __webpack_require__(315)
+var isRat = __webpack_require__(306)
+var isBN = __webpack_require__(307)
+var num2bn = __webpack_require__(311)
+var str2bn = __webpack_require__(313)
+var rationalize = __webpack_require__(314)
+var div = __webpack_require__(316)
 
 module.exports = makeRational
 
@@ -24190,13 +24193,13 @@ function makeRational(numer, denom) {
 
 
 /***/ }),
-/* 305 */
+/* 306 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var isBN = __webpack_require__(306)
+var isBN = __webpack_require__(307)
 
 module.exports = isRat
 
@@ -24206,13 +24209,13 @@ function isRat(x) {
 
 
 /***/ }),
-/* 306 */
+/* 307 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var BN = __webpack_require__(307)
+var BN = __webpack_require__(308)
 
 module.exports = isBN
 
@@ -24224,7 +24227,7 @@ function isBN(x) {
 
 
 /***/ }),
-/* 307 */
+/* 308 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(module) {(function (module, exports) {
@@ -24279,7 +24282,7 @@ function isBN(x) {
 
   var Buffer;
   try {
-    Buffer = __webpack_require__(309).Buffer;
+    Buffer = __webpack_require__(310).Buffer;
   } catch (e) {
   }
 
@@ -27661,10 +27664,10 @@ function isBN(x) {
   };
 })( false || module, this);
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(308)(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(309)(module)))
 
 /***/ }),
-/* 308 */
+/* 309 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -27692,20 +27695,20 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 309 */
+/* 310 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 310 */
+/* 311 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var BN = __webpack_require__(307)
-var db = __webpack_require__(311)
+var BN = __webpack_require__(308)
+var db = __webpack_require__(312)
 
 module.exports = num2bn
 
@@ -27720,7 +27723,7 @@ function num2bn(x) {
 
 
 /***/ }),
-/* 311 */
+/* 312 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {var hasTypedArrays = false
@@ -27827,13 +27830,13 @@ module.exports.denormalized = function(n) {
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(116).Buffer))
 
 /***/ }),
-/* 312 */
+/* 313 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var BN = __webpack_require__(307)
+var BN = __webpack_require__(308)
 
 module.exports = str2BN
 
@@ -27843,14 +27846,14 @@ function str2BN(x) {
 
 
 /***/ }),
-/* 313 */
+/* 314 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var num2bn = __webpack_require__(310)
-var sign = __webpack_require__(314)
+var num2bn = __webpack_require__(311)
+var sign = __webpack_require__(315)
 
 module.exports = rationalize
 
@@ -27876,13 +27879,13 @@ function rationalize(numer, denom) {
 
 
 /***/ }),
-/* 314 */
+/* 315 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var BN = __webpack_require__(307)
+var BN = __webpack_require__(308)
 
 module.exports = sign
 
@@ -27892,13 +27895,13 @@ function sign (x) {
 
 
 /***/ }),
-/* 315 */
+/* 316 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var rationalize = __webpack_require__(313)
+var rationalize = __webpack_require__(314)
 
 module.exports = div
 
@@ -27908,7 +27911,7 @@ function div(a, b) {
 
 
 /***/ }),
-/* 316 */
+/* 317 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27922,14 +27925,14 @@ function cmp(a, b) {
 
 
 /***/ }),
-/* 317 */
+/* 318 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bn2num = __webpack_require__(318)
-var ctz = __webpack_require__(319)
+var bn2num = __webpack_require__(319)
+var ctz = __webpack_require__(320)
 
 module.exports = roundRat
 
@@ -27965,13 +27968,13 @@ function roundRat (f) {
 
 
 /***/ }),
-/* 318 */
+/* 319 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var sign = __webpack_require__(314)
+var sign = __webpack_require__(315)
 
 module.exports = bn2num
 
@@ -27995,14 +27998,14 @@ function bn2num(b) {
 
 
 /***/ }),
-/* 319 */
+/* 320 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var db = __webpack_require__(311)
-var ctz = __webpack_require__(268).countTrailingZeros
+var db = __webpack_require__(312)
+var ctz = __webpack_require__(269).countTrailingZeros
 
 module.exports = ctzNumber
 
@@ -28021,7 +28024,7 @@ function ctzNumber(x) {
 
 
 /***/ }),
-/* 320 */
+/* 321 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28029,7 +28032,7 @@ function ctzNumber(x) {
 
 module.exports = float2rat
 
-var rat = __webpack_require__(304)
+var rat = __webpack_require__(305)
 
 function float2rat(v) {
   var result = new Array(v.length)
@@ -28041,13 +28044,13 @@ function float2rat(v) {
 
 
 /***/ }),
-/* 321 */
+/* 322 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var doubleBits = __webpack_require__(311)
+var doubleBits = __webpack_require__(312)
 
 var SMALLEST_DENORM = Math.pow(2, -1074)
 var UINT_MAX = (-1)>>>0
@@ -28089,7 +28092,7 @@ function nextafter(x, y) {
 }
 
 /***/ }),
-/* 322 */
+/* 323 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28097,13 +28100,13 @@ function nextafter(x, y) {
 
 module.exports = solveIntersection
 
-var ratMul = __webpack_require__(323)
-var ratDiv = __webpack_require__(315)
-var ratSub = __webpack_require__(324)
-var ratSign = __webpack_require__(325)
-var rvSub = __webpack_require__(326)
-var rvAdd = __webpack_require__(327)
-var rvMuls = __webpack_require__(329)
+var ratMul = __webpack_require__(324)
+var ratDiv = __webpack_require__(316)
+var ratSub = __webpack_require__(325)
+var ratSign = __webpack_require__(326)
+var rvSub = __webpack_require__(327)
+var rvAdd = __webpack_require__(328)
+var rvMuls = __webpack_require__(330)
 
 function ratPerp (a, b) {
   return ratSub(ratMul(a[0], b[1]), ratMul(a[1], b[0]))
@@ -28138,34 +28141,18 @@ function solveIntersection (a, b, c, d) {
 
 
 /***/ }),
-/* 323 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var rationalize = __webpack_require__(313)
-
-module.exports = mul
-
-function mul(a, b) {
-  return rationalize(a[0].mul(b[0]), a[1].mul(b[1]))
-}
-
-
-/***/ }),
 /* 324 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var rationalize = __webpack_require__(313)
+var rationalize = __webpack_require__(314)
 
-module.exports = sub
+module.exports = mul
 
-function sub(a, b) {
-  return rationalize(a[0].mul(b[1]).sub(a[1].mul(b[0])), a[1].mul(b[1]))
+function mul(a, b) {
+  return rationalize(a[0].mul(b[0]), a[1].mul(b[1]))
 }
 
 
@@ -28176,12 +28163,12 @@ function sub(a, b) {
 "use strict";
 
 
-var bnsign = __webpack_require__(314)
+var rationalize = __webpack_require__(314)
 
-module.exports = sign
+module.exports = sub
 
-function sign(x) {
-  return bnsign(x[0]) * bnsign(x[1])
+function sub(a, b) {
+  return rationalize(a[0].mul(b[1]).sub(a[1].mul(b[0])), a[1].mul(b[1]))
 }
 
 
@@ -28192,7 +28179,23 @@ function sign(x) {
 "use strict";
 
 
-var bnsub = __webpack_require__(324)
+var bnsign = __webpack_require__(315)
+
+module.exports = sign
+
+function sign(x) {
+  return bnsign(x[0]) * bnsign(x[1])
+}
+
+
+/***/ }),
+/* 327 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var bnsub = __webpack_require__(325)
 
 module.exports = sub
 
@@ -28207,13 +28210,13 @@ function sub(a, b) {
 
 
 /***/ }),
-/* 327 */
+/* 328 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bnadd = __webpack_require__(328)
+var bnadd = __webpack_require__(329)
 
 module.exports = add
 
@@ -28228,13 +28231,13 @@ function add (a, b) {
 
 
 /***/ }),
-/* 328 */
+/* 329 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var rationalize = __webpack_require__(313)
+var rationalize = __webpack_require__(314)
 
 module.exports = add
 
@@ -28246,14 +28249,14 @@ function add(a, b) {
 
 
 /***/ }),
-/* 329 */
+/* 330 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var rat = __webpack_require__(304)
-var mul = __webpack_require__(323)
+var rat = __webpack_require__(305)
+var mul = __webpack_require__(324)
 
 module.exports = muls
 
@@ -28269,16 +28272,16 @@ function muls(a, x) {
 
 
 /***/ }),
-/* 330 */
+/* 331 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var monotoneTriangulate = __webpack_require__(331)
-var makeIndex = __webpack_require__(333)
-var delaunayFlip = __webpack_require__(334)
-var filterTriangulation = __webpack_require__(336)
+var monotoneTriangulate = __webpack_require__(332)
+var makeIndex = __webpack_require__(334)
+var delaunayFlip = __webpack_require__(335)
+var filterTriangulation = __webpack_require__(337)
 
 module.exports = cdt2d
 
@@ -28358,14 +28361,14 @@ function cdt2d(points, edges, options) {
 
 
 /***/ }),
-/* 331 */
+/* 332 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bsearch = __webpack_require__(332)
-var orient = __webpack_require__(285)[3]
+var bsearch = __webpack_require__(333)
+var orient = __webpack_require__(286)[3]
 
 var EVENT_POINT = 0
 var EVENT_END   = 1
@@ -28552,7 +28555,7 @@ function monotoneTriangulate(points, edges) {
 
 
 /***/ }),
-/* 332 */
+/* 333 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28610,13 +28613,13 @@ module.exports = {
 
 
 /***/ }),
-/* 333 */
+/* 334 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bsearch = __webpack_require__(332)
+var bsearch = __webpack_require__(333)
 
 module.exports = createTriangulation
 
@@ -28721,14 +28724,14 @@ function createTriangulation(numVerts, edges) {
 
 
 /***/ }),
-/* 334 */
+/* 335 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var inCircle = __webpack_require__(335)[4]
-var bsearch = __webpack_require__(332)
+var inCircle = __webpack_require__(336)[4]
+var bsearch = __webpack_require__(333)
 
 module.exports = delaunayRefine
 
@@ -28843,16 +28846,16 @@ function delaunayRefine(points, triangulation) {
 
 
 /***/ }),
-/* 335 */
+/* 336 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var twoProduct = __webpack_require__(286)
-var robustSum = __webpack_require__(287)
-var robustDiff = __webpack_require__(290)
-var robustScale = __webpack_require__(288)
+var twoProduct = __webpack_require__(287)
+var robustSum = __webpack_require__(288)
+var robustDiff = __webpack_require__(291)
+var robustScale = __webpack_require__(289)
 
 var NUM_EXPAND = 6
 
@@ -29016,13 +29019,13 @@ function generateInSphereTest() {
 generateInSphereTest()
 
 /***/ }),
-/* 336 */
+/* 337 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bsearch = __webpack_require__(332)
+var bsearch = __webpack_require__(333)
 
 module.exports = classifyFaces
 
@@ -29203,7 +29206,7 @@ function classifyFaces(triangulation, target, infinity) {
 
 
 /***/ }),
-/* 337 */
+/* 338 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29211,13 +29214,13 @@ function classifyFaces(triangulation, target, infinity) {
 
 module.exports = planarGraphToPolyline
 
-var e2a = __webpack_require__(338)
-var planarDual = __webpack_require__(339)
-var preprocessPolygon = __webpack_require__(343)
-var twoProduct = __webpack_require__(286)
-var robustSum = __webpack_require__(287)
-var uniq = __webpack_require__(280)
-var trimLeaves = __webpack_require__(351)
+var e2a = __webpack_require__(339)
+var planarDual = __webpack_require__(340)
+var preprocessPolygon = __webpack_require__(344)
+var twoProduct = __webpack_require__(287)
+var robustSum = __webpack_require__(288)
+var uniq = __webpack_require__(281)
+var trimLeaves = __webpack_require__(352)
 
 function makeArray(length, fill) {
   var result = new Array(length)
@@ -29413,7 +29416,7 @@ function planarGraphToPolyline(edges, positions) {
 }
 
 /***/ }),
-/* 338 */
+/* 339 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29421,7 +29424,7 @@ function planarGraphToPolyline(edges, positions) {
 
 module.exports = edgeToAdjacency
 
-var uniq = __webpack_require__(280)
+var uniq = __webpack_require__(281)
 
 function edgeToAdjacency(edges, numVertices) {
   var numEdges = edges.length
@@ -29452,7 +29455,7 @@ function edgeToAdjacency(edges, numVertices) {
 }
 
 /***/ }),
-/* 339 */
+/* 340 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29460,7 +29463,7 @@ function edgeToAdjacency(edges, numVertices) {
 
 module.exports = planarDual
 
-var compareAngle = __webpack_require__(340)
+var compareAngle = __webpack_require__(341)
 
 function planarDual(cells, positions) {
 
@@ -29588,7 +29591,7 @@ function planarDual(cells, positions) {
 }
 
 /***/ }),
-/* 340 */
+/* 341 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29596,11 +29599,11 @@ function planarDual(cells, positions) {
 
 module.exports = compareAngle
 
-var orient = __webpack_require__(285)
-var sgn = __webpack_require__(341)
-var twoSum = __webpack_require__(289)
-var robustProduct = __webpack_require__(342)
-var robustSum = __webpack_require__(287)
+var orient = __webpack_require__(286)
+var sgn = __webpack_require__(342)
+var twoSum = __webpack_require__(290)
+var robustProduct = __webpack_require__(343)
+var robustSum = __webpack_require__(288)
 
 function testInterior(a, b, c) {
   var x0 = twoSum(a[0], -b[0])
@@ -29679,7 +29682,7 @@ function compareAngle(a, b, c, d) {
 }
 
 /***/ }),
-/* 341 */
+/* 342 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29692,14 +29695,14 @@ module.exports = function signum(x) {
 }
 
 /***/ }),
-/* 342 */
+/* 343 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var robustSum = __webpack_require__(287)
-var robustScale = __webpack_require__(288)
+var robustSum = __webpack_require__(288)
+var robustScale = __webpack_require__(289)
 
 module.exports = robustProduct
 
@@ -29727,15 +29730,15 @@ function robustProduct(a, b) {
 }
 
 /***/ }),
-/* 343 */
+/* 344 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = preprocessPolygon
 
-var orient = __webpack_require__(285)[3]
-var makeSlabs = __webpack_require__(344)
-var makeIntervalTree = __webpack_require__(348)
-var bsearch = __webpack_require__(350)
+var orient = __webpack_require__(286)[3]
+var makeSlabs = __webpack_require__(345)
+var makeIntervalTree = __webpack_require__(349)
+var bsearch = __webpack_require__(351)
 
 function visitInterval() {
   return true
@@ -29883,7 +29886,7 @@ function preprocessPolygon(loops) {
 }
 
 /***/ }),
-/* 344 */
+/* 345 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -29891,10 +29894,10 @@ function preprocessPolygon(loops) {
 
 module.exports = createSlabDecomposition
 
-var bounds = __webpack_require__(345)
-var createRBTree = __webpack_require__(346)
-var orient = __webpack_require__(285)
-var orderSegments = __webpack_require__(347)
+var bounds = __webpack_require__(346)
+var createRBTree = __webpack_require__(347)
+var orient = __webpack_require__(286)
+var orderSegments = __webpack_require__(348)
 
 function SlabDecomposition(slabs, coordinates, horizontal) {
   this.slabs = slabs
@@ -30119,7 +30122,7 @@ function createSlabDecomposition(segments) {
 }
 
 /***/ }),
-/* 345 */
+/* 346 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -30186,7 +30189,7 @@ module.exports = {
 
 
 /***/ }),
-/* 346 */
+/* 347 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -31188,7 +31191,7 @@ function createRBTree(compare) {
 }
 
 /***/ }),
-/* 347 */
+/* 348 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -31196,7 +31199,7 @@ function createRBTree(compare) {
 
 module.exports = orderSegments
 
-var orient = __webpack_require__(285)
+var orient = __webpack_require__(286)
 
 function horizontalOrder(a, b) {
   var bl, br
@@ -31289,13 +31292,13 @@ function orderSegments(b, a) {
 }
 
 /***/ }),
-/* 348 */
+/* 349 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var bounds = __webpack_require__(349)
+var bounds = __webpack_require__(350)
 
 var NOT_FOUND = 0
 var SUCCESS = 1
@@ -31661,73 +31664,6 @@ function createWrapper(intervals) {
 
 
 /***/ }),
-/* 349 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function compileSearch(funcName, predicate, reversed, extraArgs, useNdarray, earlyOut) {
-  var code = [
-    "function ", funcName, "(a,l,h,", extraArgs.join(","),  "){",
-earlyOut ? "" : "var i=", (reversed ? "l-1" : "h+1"),
-";while(l<=h){\
-var m=(l+h)>>>1,x=a", useNdarray ? ".get(m)" : "[m]"]
-  if(earlyOut) {
-    if(predicate.indexOf("c") < 0) {
-      code.push(";if(x===y){return m}else if(x<=y){")
-    } else {
-      code.push(";var p=c(x,y);if(p===0){return m}else if(p<=0){")
-    }
-  } else {
-    code.push(";if(", predicate, "){i=m;")
-  }
-  if(reversed) {
-    code.push("l=m+1}else{h=m-1}")
-  } else {
-    code.push("h=m-1}else{l=m+1}")
-  }
-  code.push("}")
-  if(earlyOut) {
-    code.push("return -1};")
-  } else {
-    code.push("return i};")
-  }
-  return code.join("")
-}
-
-function compileBoundsSearch(predicate, reversed, suffix, earlyOut) {
-  var result = new Function([
-  compileSearch("A", "x" + predicate + "y", reversed, ["y"], false, earlyOut),
-  compileSearch("B", "x" + predicate + "y", reversed, ["y"], true, earlyOut),
-  compileSearch("P", "c(x,y)" + predicate + "0", reversed, ["y", "c"], false, earlyOut),
-  compileSearch("Q", "c(x,y)" + predicate + "0", reversed, ["y", "c"], true, earlyOut),
-"function dispatchBsearch", suffix, "(a,y,c,l,h){\
-if(a.shape){\
-if(typeof(c)==='function'){\
-return Q(a,(l===undefined)?0:l|0,(h===undefined)?a.shape[0]-1:h|0,y,c)\
-}else{\
-return B(a,(c===undefined)?0:c|0,(l===undefined)?a.shape[0]-1:l|0,y)\
-}}else{\
-if(typeof(c)==='function'){\
-return P(a,(l===undefined)?0:l|0,(h===undefined)?a.length-1:h|0,y,c)\
-}else{\
-return A(a,(c===undefined)?0:c|0,(l===undefined)?a.length-1:l|0,y)\
-}}}\
-return dispatchBsearch", suffix].join(""))
-  return result()
-}
-
-module.exports = {
-  ge: compileBoundsSearch(">=", false, "GE"),
-  gt: compileBoundsSearch(">", false, "GT"),
-  lt: compileBoundsSearch("<", true, "LT"),
-  le: compileBoundsSearch("<=", true, "LE"),
-  eq: compileBoundsSearch("-", true, "EQ", true)
-}
-
-
-/***/ }),
 /* 350 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -31801,9 +31737,76 @@ module.exports = {
 "use strict";
 
 
+function compileSearch(funcName, predicate, reversed, extraArgs, useNdarray, earlyOut) {
+  var code = [
+    "function ", funcName, "(a,l,h,", extraArgs.join(","),  "){",
+earlyOut ? "" : "var i=", (reversed ? "l-1" : "h+1"),
+";while(l<=h){\
+var m=(l+h)>>>1,x=a", useNdarray ? ".get(m)" : "[m]"]
+  if(earlyOut) {
+    if(predicate.indexOf("c") < 0) {
+      code.push(";if(x===y){return m}else if(x<=y){")
+    } else {
+      code.push(";var p=c(x,y);if(p===0){return m}else if(p<=0){")
+    }
+  } else {
+    code.push(";if(", predicate, "){i=m;")
+  }
+  if(reversed) {
+    code.push("l=m+1}else{h=m-1}")
+  } else {
+    code.push("h=m-1}else{l=m+1}")
+  }
+  code.push("}")
+  if(earlyOut) {
+    code.push("return -1};")
+  } else {
+    code.push("return i};")
+  }
+  return code.join("")
+}
+
+function compileBoundsSearch(predicate, reversed, suffix, earlyOut) {
+  var result = new Function([
+  compileSearch("A", "x" + predicate + "y", reversed, ["y"], false, earlyOut),
+  compileSearch("B", "x" + predicate + "y", reversed, ["y"], true, earlyOut),
+  compileSearch("P", "c(x,y)" + predicate + "0", reversed, ["y", "c"], false, earlyOut),
+  compileSearch("Q", "c(x,y)" + predicate + "0", reversed, ["y", "c"], true, earlyOut),
+"function dispatchBsearch", suffix, "(a,y,c,l,h){\
+if(a.shape){\
+if(typeof(c)==='function'){\
+return Q(a,(l===undefined)?0:l|0,(h===undefined)?a.shape[0]-1:h|0,y,c)\
+}else{\
+return B(a,(c===undefined)?0:c|0,(l===undefined)?a.shape[0]-1:l|0,y)\
+}}else{\
+if(typeof(c)==='function'){\
+return P(a,(l===undefined)?0:l|0,(h===undefined)?a.length-1:h|0,y,c)\
+}else{\
+return A(a,(c===undefined)?0:c|0,(l===undefined)?a.length-1:l|0,y)\
+}}}\
+return dispatchBsearch", suffix].join(""))
+  return result()
+}
+
+module.exports = {
+  ge: compileBoundsSearch(">=", false, "GE"),
+  gt: compileBoundsSearch(">", false, "GT"),
+  lt: compileBoundsSearch("<", true, "LT"),
+  le: compileBoundsSearch("<=", true, "LE"),
+  eq: compileBoundsSearch("-", true, "EQ", true)
+}
+
+
+/***/ }),
+/* 352 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 module.exports = trimLeaves
 
-var e2a = __webpack_require__(338)
+var e2a = __webpack_require__(339)
 
 function trimLeaves(edges, positions) {
   var adj = e2a(edges, positions.length)
