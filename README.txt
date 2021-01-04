@@ -12,7 +12,7 @@ StaffCode installation instructions
 <span class="staff-code" sc-interactive="{CHOICE1}" sc-inline="{CHOICE2}" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size="{SIMPLETEXT3}">
     <textarea class="input" style="display: none;">{TEXT}</textarea>
 </span>
-<script src='assets/javascript/staffCode.js'></script>
+<script src='https://sagittal.github.io/staffCode.js'></script>
 
 If you want the StaffCode your users provide to always be preceded by certain staff code (such as a particular clef and/or the Auto Stave code), you can put any StaffCode you like just before the {TEXT} token.
 
@@ -40,7 +40,7 @@ See the HTML Replacement section for the [staff] code above for further details 
 <span class="staff-code" sc-inline="true" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size={SIMPLETEXT3}>
     <textarea class="input" style="display: none;">{TEXT}</textarea>
 </span>
-<script src='assets/javascript/staffCode.js'></script>
+<script src='https://sagittal.github.io/staffCode.js'></script>
 
 - Fill in the "Help line" field with:
 
