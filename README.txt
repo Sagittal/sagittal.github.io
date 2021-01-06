@@ -3,11 +3,11 @@ StaffCode installation instructions
 - In Admin Control Panel -> Posting -> BBCodes click "Add a new BBCode". This one is for the block mode.
 - Fill in the BBCode usage field with:
 
-[staff={SIMPLETEXT1;optional} interactive={CHOICE1=true,false;defaultValue=false} inline={CHOICE2=true,false;defaultValue=false} font={SIMPLETEXT2;optional} size={SIMPLETEXT3;optional}]{TEXT}[/staff]
+[staff={SIMPLETEXT1;optional} interactive={CHOICE1=true,false;defaultValue=false} inline={CHOICE2=true,false;defaultValue=false} copy-link={CHOICE3=true,false;defaultValue=false} font={SIMPLETEXT2;optional} size={SIMPLETEXT3;defaultValue=1.13}]{TEXT}[/staff]
 
 - Fill in the "HTML Replacement" field with:
 
-<span class="staff-code" sc-interactive="{CHOICE1}" sc-inline="{CHOICE2}" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size="{SIMPLETEXT3}">
+<span class="staff-code" sc-interactive="{CHOICE1}" sc-inline="{CHOICE2}" sc-copy-link="{CHOICE3}" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size="{SIMPLETEXT3}">
     <textarea class="input" style="display: none;">{TEXT}</textarea>
 </span>
 <script src='assets/javascript/staffCode.js'></script>
