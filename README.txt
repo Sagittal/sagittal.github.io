@@ -10,7 +10,8 @@ StaffCode installation instructions
 <span class="staff-code" sc-interactive="{CHOICE1}" sc-inline="{CHOICE2}" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size="{SIMPLETEXT3}">
     <textarea class="input" style="display: none;">{TEXT}</textarea>
 </span>
-<script src='https://sagittal.github.io/staffCode.js'></script>
+<script src='assets/javascript/staffCode.js'></script>
+<script>globalThis.staffCode || document.write('<script src="https://sagittal.github.io/staffCode.js"></script>')</script>
 
 If you want the StaffCode your users provide to always be preceded by certain staff code (such as a particular clef and/or code to turn on the staff), you can put any StaffCode you like just before the {TEXT} token.
 
@@ -38,15 +39,14 @@ See the HTML Replacement section for the [staff] code above for further details 
 <span class="staff-code" sc-inline="true" sc-line-height="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-size={SIMPLETEXT3}>
     <textarea class="input" style="display: none;">{TEXT}</textarea>
 </span>
-<script src='https://sagittal.github.io/staffCode.js'></script>
+<script src='assets/javascript/staffCode.js'></script>
+<script>globalThis.staffCode || document.write('<script src="https://sagittal.github.io/staffCode.js"></script>')</script>
 
 - Fill in the "Help line" field with:
 
 Convert staffCodes into inline music notation: [sc]/|[/sc]
 
-// TODO: FEATURE IMPROVE, READY TO GO: PHPBB ADMINS CAN INSTALL STAFF CODE LOCALLY IF THEY WISH
-//  I'll just update the README.md to explain that if they really want to,
-//  They can grab those resources from such and such links and where to install them.
-//  But it won't be necessary for installation anymore.
-//  The fonts can easily handle fallback. Can JavaScripts? yes, using something like this:
-//  See: https://stackoverflow.com/questions/5257923/how-to-load-local-script-files-as-fallback-in-cases-where-cdn-are-blocked-unavai
+Optional: if you would rather install the fonts and JavaScript directly on your phpBB server:
+- Download https://sagittal.github.io/assets/fonts/BravuraTextBB.otf, https://sagittal.github.io/assets/fonts/BravuraTextBB.woff, and https://sagittal.github.io/staffCode.js.
+- Drag `BravuraTextBB.otf` and `BravuraTextBB.woff` to your `assets/fonts` folder, along with any other fonts your users may wish to use. SMuFL-compliant fonts will not work out of the box; a non-trivial amount of modification to a font is required to work with StaffCode.
+- Drag `staffCode.js` to your `assets/javascripts` folder.
