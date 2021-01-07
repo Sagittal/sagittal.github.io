@@ -3,7 +3,7 @@ StaffCode installation instructions
 - In Admin Control Panel -> Posting -> BBCodes click "Add a new BBCode". This one is for the block mode.
 - Fill in the BBCode usage field with:
 
-[staff={SIMPLETEXT1;optional} interactive={CHOICE1=true,false;defaultValue=false} inline={CHOICE2=true,false;defaultValue=false} copy-link={CHOICE3=true,false;defaultValue=false} size-spinner={CHOICE4=true,false;defaultValue=false} line-spinner={CHOICE5=true,false;defaultValue=false} font={SIMPLETEXT2;optional} size={SIMPLETEXT3;defaultValue=1.13}]{TEXT}[/staff]
+[staff={SIMPLETEXT1;optional} interactive={CHOICE1=true,false;defaultValue=false} inline={CHOICE2=true,false;defaultValue=false} copy-link={CHOICE3=true,false;defaultValue=false} size-spinner={CHOICE4=true,false;defaultValue=false} line-spinner={CHOICE5=true,false;defaultValue=false} font={SIMPLETEXT2;optional} size={SIMPLETEXT3;defaultValue=1.1}]{TEXT}[/staff]
 
 - Fill in the "HTML Replacement" field with:
 
