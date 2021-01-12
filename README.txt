@@ -7,11 +7,11 @@ StaffCode installation instructions
 
 - Fill in the "HTML Replacement" field with:
 
-<span class="staff-code" sc-initial-line="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-initial-size="{SIMPLETEXT3}">
-    <textarea class="input" style="display: none;">{TEXT}</textarea>
+<span class="staff-code" sc-font="{SIMPLETEXT2}" sc-initial-line="{SIMPLETEXT1}" sc-initial-size="{SIMPLETEXT3}">
+    <textarea class="sc-input" style="display: none;">{TEXT}</textarea>
 </span>
-<script>globalThis.staffCode === undefined ? document.write('<script src="assets/javascript/staffCode.js"></script>') : globalThis.staffCode = "NO_LOCAL_STAFF_CODE"</script>
-<script>globalThis.staffCode === undefined || globalThis.staffCode === "NO_LOCAL_STAFF_CODE" ? document.write('<script src="https://staffcode.sagittal.org/staffCode.js"></script>') : {}</script>
+<script>globalThis.staffCode === undefined ? document.write("<script src="assets/javascript/staffCode.js"></script>") : globalThis.staffCode = "NO_LOCAL_STAFF_CODE"</script>
+<script>globalThis.staffCode === undefined || globalThis.staffCode === "NO_LOCAL_STAFF_CODE" ? document.write("<script src="https://staffcode.sagittal.org/staffCode.js"></script>") : {}</script>
 
 If you want the StaffCode your users provide to always be preceded by certain staff code (such as a particular clef and/or code to turn on the staff), you can put any StaffCode you like just before the {TEXT} token.
 
@@ -36,11 +36,12 @@ Convert staffCodes into a music notation figure: [staff]ston Gcl ; F4 nt[/staff]
 
 See the HTML Replacement section for the [staff] code above for further details if you are interested in customizing.
 
-<span class="staff-code" sc-inline="true" sc-initial-line="{SIMPLETEXT1}" sc-font="{SIMPLETEXT2}" sc-initial-size={SIMPLETEXT3}>
-    <textarea class="input" style="display: none;">{TEXT}</textarea>
+<span class="staff-code" sc-font="{SIMPLETEXT2}" sc-initial-line="{SIMPLETEXT1}" sc-initial-size={SIMPLETEXT3}
+      sc-inline="true">
+    <textarea class="sc-input" style="display: none;">{TEXT}</textarea>
 </span>
-<script>globalThis.staffCode === undefined ? document.write('<script src="assets/javascript/staffCode.js"></script>') : globalThis.staffCode = "NO_LOCAL_STAFF_CODE"</script>
-<script>globalThis.staffCode === undefined || globalThis.staffCode === "NO_LOCAL_STAFF_CODE" ? document.write('<script src="https://staffcode.sagittal.org/staffCode.js"></script>') : {}</script>
+<script>globalThis.staffCode === undefined ? document.write("<script src="assets/javascript/staffCode.js"></script>") : globalThis.staffCode = "NO_LOCAL_STAFF_CODE"</script>
+<script>globalThis.staffCode === undefined || globalThis.staffCode === "NO_LOCAL_STAFF_CODE" ? document.write("<script src="https://staffcode.sagittal.org/staffCode.js"></script>") : {}</script>
 
 - Fill in the "Help line" field with:
 
