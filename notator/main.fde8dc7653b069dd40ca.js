@@ -1,0 +1,1 @@
+(()=>{"use strict";const t=document.createElement("div");t.textContent="(one day this could be the Sagittal Notator web app)",document.body.appendChild(t)})();

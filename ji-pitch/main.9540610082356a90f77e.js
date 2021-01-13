@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=document.createElement("div");e.textContent="(one day this could be the JI Pitch web app)",document.body.appendChild(e)})();
